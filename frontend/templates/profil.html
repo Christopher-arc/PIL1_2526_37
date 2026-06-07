@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Mon Profil – MentorLink</title>
+</head>
+<body>
+
+<h1>MentorLink</h1>
+<p>Bienvenue, <strong>{{ session['prenom'] }} {{ session['nom'] }}</strong></p>
+<a href="/annonces">Annonces</a> | <a href="/mes-annonces">Mes annonces</a> | <a href="/deconnexion">Se déconnecter</a>
+
+<hr>
+
+<h2>Mon Profil</h2>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for categorie, message in messages %}
+            <p style="color: {% if categorie == 'danger' %}red{% else %}green{% endif %}">{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<!-- Photo de profil -->
+{% if utilisateur['photo'] %}
+    <img src="/statics/photos/{{ utilisateur['photo'] }}" width="100" height="100"
+         style="border-radius:50%; object-fit:cover;"><br><br>
+{% else %}
+    <p><em>Pas de photo de profil</em></p>
+{% endif %}
+
+<!-- INFOS PRINCIPALES -->
+<form method="POST" action="/profil" enctype="multipart/form-data">
+
+    <label>Nom</label>
+    <input type="text" name="nom" value="{{ utilisateur['nom'] }}" required><br><br>
+
+    <label>Prénom</label>
+    <input type="text" name="prenom" value="{{ utilisateur['prenom'] }}" required><br><br>
+
+    <label>Téléphone</label>
+    <input type="tel" name="telephone" value="{{ utilisateur['telephone'] }}" required><br><br>
+
+    <label>Filière</label>
+    <select name="filiere" required>
+        {% for f in ['IA', 'GL', 'SI', 'IM', 'SE&IoT'] %}
+            <option value="{{ f }}" {% if utilisateur['filiere'] == f %}selected{% endif %}>{{ f }}</option>
+        {% endfor %}
+    </select><br><br>
+
+    <label>Niveau</label>
+    <select name="niveau" required>
+        {% for n in ['L1', 'L2', 'L3', 'M1', 'M2'] %}
+            <option value="{{ n }}" {% if utilisateur['niveau'] == n %}selected{% endif %}>{{ n }}</option>
+        {% endfor %}
+    </select><br><br>
+
+    <label>Bio</label>
+    <textarea name="bio" rows="3">{{ utilisateur['Bio'] or '' }}</textarea><br><br>
+
+    <label>Photo de profil</label>
+    <input type="file" name="photo" accept=".jpg,.jpeg,.png"><br><br>
+
+    <h3>Points forts</h3>
+    {% for m in matieres %}
+        <label>
+            <input type="checkbox" name="points_forts" value="{{ m['id_matiere'] }}"
+                {% if m['id_matiere'] in points_forts %}checked{% endif %}>
+            {{ m['nom_matiere'] }}
+        </label><br>
+    {% endfor %}
+
+    <h3>Points faibles</h3>
+    {% for m in matieres %}
+        <label>
+            <input type="checkbox" name="points_faibles" value="{{ m['id_matiere'] }}"
+                {% if m['id_matiere'] in points_faibles %}checked{% endif %}>
+            {{ m['nom_matiere'] }}
+        </label><br>
+    {% endfor %}
+
+    <h3>Disponibilités</h3>
+    {% for d in dispos %}
+        <label>
+            <input type="checkbox" name="disponibilites" value="{{ d['id_dispo'] }}"
+                {% if d['id_dispo'] in mes_dispos %}checked{% endif %}>
+            {{ d['jour'] }} {{ d['heure_debut'] }} - {{ d['heure_fin'] }}
+        </label><br>
+    {% endfor %}
+
+    <br>
+    <button type="submit">Mettre à jour le profil</button>
+
+</form>
+
+<hr>
+
+<!-- MODIFIER EMAIL -->
+<h3>Modifier l'email</h3>
+<p>Email actuel : <strong>{{ utilisateur['email'] }}</strong></p>
+<form method="POST" action="/profil/modifier-email">
+    <input type="email"    name="email"        placeholder="Nouvel email"      required><br><br>
+    <input type="password" name="mot_de_passe" placeholder="Votre mot de passe pour confirmer" required><br><br>
+    <button type="submit">Changer l'email</button>
+</form>
+
+<hr>
+
+<!-- MODIFIER MOT DE PASSE -->
+<h3>Modifier le mot de passe</h3>
+<form method="POST" action="/profil/modifier-mdp">
+    <input type="password" name="ancien_mdp"  placeholder="Ancien mot de passe"          required><br><br>
+    <input type="password" name="nouveau_mdp" placeholder="Nouveau mot de passe"          required minlength="6"><br><br>
+    <input type="password" name="confirm_mdp" placeholder="Confirmer le nouveau mot de passe" required minlength="6"><br><br>
+    <button type="submit">Changer le mot de passe</button>
+</form>
+
+</body>
+</html>

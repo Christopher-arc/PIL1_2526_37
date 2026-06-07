@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Annonces</title>
+</head>
+<body>
+   <h1>MentorLink</h1>
+<p>Bienvenue, <strong>{{ session['prenom'] }} {{ session['nom'] }}</strong></p>
+<p><a href="/profil">Mon profil</a> | <a href="/mes-annonces">Mes annonces</a> | <a href="/deconnexion">Se déconnecter</a>
+ 
+<hr>
+
+<h2>Annonces</h2>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for categorie, message in messages %}
+            <p style="color: {% if categorie == 'danger' %}red{% else %}green{% endif %}">
+                {{ message }}
+            </p>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<!-- FILTRES -->
+<form method="GET" action="/annonces">
+
+    <select name="matiere">
+        <option value="">-- Toutes les matières --</option>
+        {% for m in matieres %}
+            <option value="{{ m['id_matiere'] }}" {% if matiere == m['id_matiere']|string %}selected{% endif %}>
+                {{ m['nom_matiere'] }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <select name="format_session">
+        <option value="">-- Tous les formats --</option>
+        <option value="présentiel" {% if format_session == 'présentiel' %}selected{% endif %}>Présentiel</option>
+        <option value="en_ligne"   {% if format_session == 'en_ligne'   %}selected{% endif %}>En ligne</option>
+        <option value="les_deux"   {% if format_session == 'les_deux'   %}selected{% endif %}>Les deux</option>
+    </select>
+
+    <select name="dispo">
+        <option value="">-- Toutes les disponibilités --</option>
+        {% for d in dispos %}
+            <option value="{{ d['id_dispo'] }}" {% if id_dispo == d['id_dispo']|string %}selected{% endif %}>
+                {{ d['jour'] }} {{ d['heure_debut'] }} - {{ d['heure_fin'] }}
+            </option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Filtrer</button>
+    <a href="/annonces">Réinitialiser</a>
+
+</form>
+
+<hr>
+
+<!-- CRÉER UNE ANNONCE -->
+<h3>Créer une annonce</h3>
+<form method="POST" action="/annonces/new">
+
+    <select name="type_annonce" required>
+        <option value="">-- Type --</option>
+        <option value="offre">Offre</option>
+        <option value="demande">Demande</option>
+    </select>
+
+    <select name="format_session" required>
+        <option value="">-- Format --</option>
+        <option value="présentiel">Présentiel</option>
+        <option value="en_ligne">En ligne</option>
+        <option value="les_deux">Les deux</option>
+    </select><br><br>
+
+    <label>Matières</label><br>
+    {% for m in matieres %}
+        <label>
+            <input type="checkbox" name="matieres" value="{{ m['id_matiere'] }}">
+            {{ m['nom_matiere'] }}
+        </label><br>
+    {% endfor %}
+
+    <br>
+    <label>Disponibilités</label><br>
+    {% for d in dispos %}
+        <label>
+            <input type="checkbox" name="disponibilites" value="{{ d['id_dispo'] }}">
+            {{ d['jour'] }} {{ d['heure_debut'] }} - {{ d['heure_fin'] }}
+        </label><br>
+    {% endfor %}
+
+    <br>
+    <textarea name="description_perso" placeholder="Description..." rows="3"></textarea><br><br>
+
+    <button type="submit">Publier</button>
+
+</form>
+
+<hr>
+
+<!-- LISTE DES ANNONCES -->
+<h3>Annonces disponibles</h3>
+
+{% if annonces %}
+    {% for a in annonces %}
+        <div style="border:1px solid #ccc; padding:10px; margin:10px 0;">
+           <a href="/utilisateur/{{ a['id_utilisateur'] }}">
+    <strong>{{ a['prenom'] }} {{ a['nom'] }}</strong>
+</a> — {{ a['filiere'] }} {{ a['niveau'] }}<br>
+            — {{ a['filiere'] }} {{ a['niveau'] }}<br>
+            Type : {{ a['type_annonce'] }}
+            | Format : {{ a['format_session'] }}<br>
+            {{ a['description_perso'] }}<br><br>
+
+            {% if a['id_utilisateur'] != session['id'] %}
+                <form method="POST" action="/annonces/repondre">
+                    <input type="hidden" name="id_annonce" value="{{ a['id_annonce'] }}">
+                    <textarea name="message_accomp" placeholder="Votre message..." rows="2"></textarea><br>
+                    <button type="submit">Répondre</button>
+                </form>
+            {% endif %}
+        </div>
+    {% endfor %}
+{% else %}
+    {% if annonces %}
+    ...
+{% else %}
+    {% if mes_lacunes or mes_competences %}
+        <p>Aucune annonce ne correspond à votre profil pour le moment.</p>
+    {% else %}
+        <p>Complétez votre profil avec vos matières pour voir les annonces correspondantes.</p>
+    {% endif %}
+{% endif %}
+{% endif %}
+
+
+
+</body>
+</html>

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Profil – MentorLink</title>
+</head>
+<body>
+
+<h1>MentorLink</h1>
+<a href="/profil">Mon profil</a> | <a href="/annonces">Annonces</a> | <a href="/deconnexion">Se déconnecter</a>
+
+<hr>
+
+
+
+
+<!-- Photo -->
+{% if utilisateur['photo'] %}
+    <img src="/statics/photos/{{ utilisateur['photo'] }}" width="120" height="120"
+         style="border-radius:50%; object-fit:cover;"><br><br>
+{% else %}
+    <p><em>Pas de photo de profil</em></p>
+{% endif %}
+
+<!-- Infos principales -->
+<h2>{{ utilisateur['prenom'] }} {{ utilisateur['nom'] }}</h2>
+<p><strong>Filière :</strong> {{ utilisateur['filiere'] }}</p>
+<p><strong>Niveau :</strong> {{ utilisateur['niveau'] }}</p>
+<p><strong>Email :</strong> {{ utilisateur['email'] }}</p>
+<p><strong>Téléphone :</strong> {{ utilisateur['telephone'] }}</p>
+<p><strong>Bio :</strong> {{ utilisateur['Bio'] or 'Non renseignée' }}</p>
+
+<hr>
+
+<!-- Points forts -->
+<h3>Points forts</h3>
+{% if points_forts %}
+    <ul>
+        {% for m in points_forts %}
+            <li>{{ m['nom_matiere'] }}</li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>Non renseignés</p>
+{% endif %}
+
+<!-- Points faibles -->
+<h3>Points faibles</h3>
+{% if points_faibles %}
+    <ul>
+        {% for m in points_faibles %}
+            <li>{{ m['nom_matiere'] }}</li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>Non renseignés</p>
+{% endif %}
+
+<!-- Disponibilités -->
+<h3>Disponibilités</h3>
+{% if dispos %}
+    <ul>
+        {% for d in dispos %}
+            <li>{{ d['jour'] }} — {{ d['heure_debut'] }} à {{ d['heure_fin'] }}</li>
+        {% endfor %}
+    </ul>
+{% else %}
+    <p>Non renseignées</p>
+{% endif %}
+
+</body>
+</html>

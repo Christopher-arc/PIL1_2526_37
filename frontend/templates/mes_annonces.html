@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Mes annonces – MentorLink</title>
+</head>
+<body>
+
+<h1>MentorLink</h1>
+<p>Bienvenue, <strong>{{ session['prenom'] }} {{ session['nom'] }}</strong></p>
+<a href="/profil">Mon profil</a> | <a href="/annonces">Annonces</a> | <a href="/deconnexion">Se déconnecter</a>
+
+<hr>
+
+<h2>Mes annonces</h2>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for categorie, message in messages %}
+            <p style="color: {% if categorie == 'danger' %}red{% else %}green{% endif %}">{{ message }}</p>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+{% if annonces %}
+    {% for a in annonces %}
+        <div style="border:1px solid #ccc; padding:15px; margin:10px 0; border-radius:5px;">
+
+            <strong>Type :</strong> {{ a['type_annonce'] }} |
+            <strong>Format :</strong> {{ a['format_session'] }} |
+            <strong>Statut :</strong> {{ a['statut'] }}<br>
+            <strong>Matières :</strong> {{ a['matieres_annonce'] or 'Non précisées' }}<br>
+            <strong>Disponibilités :</strong> {{ a['dispos_annonce'] or 'Non précisées' }}<br>
+            <strong>Description :</strong> {{ a['description_perso'] or '' }}<br>
+            <strong>Publiée le :</strong> {{ a['date_creation'].strftime('%d/%m/%Y à %H:%M') }}<br><br>
+
+            <!-- SUPPRIMER -->
+            <form method="POST" action="/annonces/supprimer/{{ a['id_annonce'] }}"
+                  onsubmit="return confirm('Supprimer cette annonce ?')" style="display:inline">
+                <button type="submit" style="color:red">Supprimer</button>
+            </form>
+
+            <!-- MODIFIER -->
+            <details style="margin-top:10px">
+                <summary>Modifier</summary>
+                <form method="POST" action="/annonces/modifier/{{ a['id_annonce'] }}" style="margin-top:10px">
+
+                    <select name="type_annonce" required>
+                        <option value="offre"   {% if a['type_annonce'] == 'offre'   %}selected{% endif %}>Offre</option>
+                        <option value="demande" {% if a['type_annonce'] == 'demande' %}selected{% endif %}>Demande</option>
+                    </select>
+
+                    <select name="format_session" required>
+                        <option value="présentiel" {% if a['format_session'] == 'présentiel' %}selected{% endif %}>Présentiel</option>
+                        <option value="en_ligne"   {% if a['format_session'] == 'en_ligne'   %}selected{% endif %}>En ligne</option>
+                        <option value="les_deux"   {% if a['format_session'] == 'les_deux'   %}selected{% endif %}>Les deux</option>
+                    </select>
+
+                    <select name="statut">
+                        <option value="actif"  {% if a['statut'] == 'actif'  %}selected{% endif %}>Actif</option>
+                        <option value="fermée" {% if a['statut'] == 'fermée' %}selected{% endif %}>Fermée</option>
+                    </select><br><br>
+
+                    <label>Matières</label><br>
+                    {% for m in matieres %}
+                        <label>
+                            <input type="checkbox" name="matieres" value="{{ m['id_matiere'] }}">
+                            {{ m['nom_matiere'] }}
+                        </label><br>
+                    {% endfor %}
+
+                    <br>
+                    <label>Disponibilités</label><br>
+                    {% for d in dispos %}
+                        <label>
+                            <input type="checkbox" name="disponibilites" value="{{ d['id_dispo'] }}">
+                            {{ d['jour'] }} {{ d['heure_debut'] }} - {{ d['heure_fin'] }}
+                        </label><br>
+                    {% endfor %}
+
+                    <br>
+                    <textarea name="description_perso" rows="3" style="width:400px">{{ a['description_perso'] or '' }}</textarea><br><br>
+
+                    <button type="submit">Enregistrer</button>
+                </form>
+            </details>
+
+        </div>
+    {% endfor %}
+{% else %}
+    <p>Vous n'avez pas encore publié d'annonce. <a href="/annonces">Publier une annonce</a></p>
+{% endif %}
+
+</body>
+</html>

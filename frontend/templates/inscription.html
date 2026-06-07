@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Inscription</title>
+</head>
+<body>
+
+<h2>Inscription</h2>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for categorie, message in messages %}
+            <p style="color: {% if categorie == 'danger' %}red{% else %}green{% endif %}">
+                {{ message }}
+            </p>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<form method="POST">
+
+    <input type="text"     name="nom"                 placeholder="Nom"                required><br><br>
+    <input type="text"     name="prenom"               placeholder="Prénom"             required><br><br>
+    <input type="tel"      name="telephone"             placeholder="Téléphone"          required><br><br>
+    <input type="email"    name="email"                 placeholder="Email"              required><br><br>
+
+    <select name="filiere" required>
+        <option value="">-- Filière --</option>
+        <option value="IA">IA</option>
+        <option value="GL">GL</option>
+        <option value="SI">SI</option>
+        <option value="IM">IM</option>
+        <option value="SE&IoT">SE&IoT</option>
+    </select><br><br>
+
+    <select name="niveau" required>
+        <option value="">-- Niveau --</option>
+        <option value="L1">L1</option>
+        <option value="L2">L2</option>
+        <option value="L3">L3</option>
+        <option value="M1">M1</option>
+        <option value="M2">M2</option>
+    </select><br><br>
+
+    <input type="password" name="mot_de_passe"         placeholder="Mot de passe"       required minlength="6"><br><br>
+    <input type="password" name="mot_de_passe_confirm" placeholder="Confirmer le mot de passe" required minlength="6"><br><br>
+
+    <h3>Points forts (matières maîtrisées)</h3>
+{% for m in matieres %}
+    <label>
+        <input type="checkbox" name="points_forts" value="{{ m['id_matiere'] }}">
+        {{ m['nom_matiere'] }}
+    </label><br>
+{% endfor %}
+
+<br>
+
+<h3>Points faibles (matières où vous avez besoin d'aide)</h3>
+{% for m in matieres %}
+    <label>
+        <input type="checkbox" name="points_faibles" value="{{ m['id_matiere'] }}">
+        {{ m['nom_matiere'] }}
+    </label><br>
+{% endfor %}
+    <button type="submit">S'inscrire</button>
+
+</form>
+
+<p>Déjà un compte ? <a href="/connexion">Se connecter</a></p>
+
+</body>
+</html>

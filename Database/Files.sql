@@ -1,5 +1,6 @@
+DROP DATABASE IF EXISTS IFRI_MentorLink;
 CREATE DATABASE IFRI_MentorLink;
-USE IFRI_MentorLink;
+USE IFRI_MentorLink;        
 CREATE TABLE Utilisateurs
 (
      id_utilisateur INT AUTO_INCREMENT PRIMARY KEY,
@@ -27,7 +28,7 @@ CREATE TABLE Annonces
     type_annonce ENUM('offre','demande'),
     format_session ENUM('présentiel','en_ligne','les_deux') NOT NULL,
     description_perso TEXT,
-    date_creation DATETIMEDEFAULT CURRENT_TIMESTAMP,
+    date_creation DATETIME DEFAULT CURRENT_TIMESTAMP,
     statut ENUM('actif','fermée') DEFAULT 'actif'
 );
 
@@ -87,7 +88,7 @@ CREATE TABLE Notifications
     date_creation DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
---Table de liaison-- 
+-- Table de liaison-- 
 CREATE TABLE IF NOT EXISTS MAITRISE
 (
     id_utilisateur INT,
@@ -142,8 +143,8 @@ CREATE TABLE IF NOT EXISTS PARTICIPATION
     FOREIGN KEY(id_discussion) REFERENCES Discussions(id_discussion)
 );
 
---Empêcher les doublons:éviter qu'un utilisateur réponde 2X à la mm annonce:un utilisateur ne peut répondre qu'une et une seul fois à la mm annonce.
-ALTER TABLE Reponses
+-- Empêcher les doublons:éviter qu'un utilisateur réponde 2X à la mm annonce:un utilisateur ne peut répondre qu'une et une seul fois à la mm annonce.
+ALTER TABLE `Réponses`
 ADD UNIQUE (id_utilisateur, id_annonce);
 
 -- Empêcher un doublon de paire mentor/mentoré:le couple mentor/mentoré ne peut avoir qu'un seul matching actif.
@@ -168,7 +169,7 @@ VALUES
   ('Zannou',  'Paul',   '97000006', 'paul.zannou@ifri.bj',   'hash_mdp_6', 'IA',     'L3', 'Mentor expérimenté, maîtrise Python, Maths et Algo.');
  
 -- 8 Matières
-INSERT INTO Matieres (nom_matiere)
+INSERT INTO Matières (nom_matiere)
 VALUES
   ('Algorithmique'),
   ('Python'),
@@ -180,7 +181,7 @@ VALUES
   ('Linux');
  
 -- 6 Créneaux de disponibilité
-INSERT INTO Disponibilites (jour, heure_debut, heure_fin)
+INSERT INTO Disponibilités (jour, heure_debut, heure_fin)
 VALUES
   ('Lun', '08:00', '10:00'),
   ('Mar', '16:00', '18:00'),
@@ -255,7 +256,7 @@ VALUES
   (4, 6); -- Annonce Rita → Samedi 9h-11h
  
 -- 2 Réponses à des annonces
-INSERT INTO Reponses (id_utilisateur, id_annonce, statut, message_accomp)
+INSERT INTO Réponses (id_utilisateur, id_annonce, statut, message_accomp)
 VALUES
   (2, 1, 'en_attente', 'Bonjour Aimé, je suis très intéressée par tes sessions Python !'),
   (4, 3, 'acceptée',   'Merci Marc, j''ai besoin d''aide surtout sur les jointures SQL.');
