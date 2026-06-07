@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IFRI MentorLink - {% block titre %}Dashboard{% endblock %}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin:0; font-family:'Sora',sans-serif; background:#f4f6fb; }
+    .sidebar { width:190px; background:#1a2f54; position:fixed; top:0; left:0; bottom:0; }
+    .main { margin-left:190px; padding:30px 34px; }
+   .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.6);
+  cursor: pointer;
+  border-radius: 8px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  margin-bottom: 4px;
+  border-right: 3px solid transparent;
+}
+
+.nav-item:hover {
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.06);
+  border-right-color: rgba(46, 204, 113, 0.5);
+}
+
+.nav-item.actif {
+  color: white;
+  background: rgba(255, 255, 255, 0.08);
+  border-right-color: #2ecc71;
+}
+    .avatar { width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.82rem; color:white; flex-shrink:0; }
+    .bv { background:#e8f8ef; color:#27ae60; font-size:0.68rem; font-weight:600; padding:2px 9px; border-radius:20px; display:inline-block; }
+    .bb { background:#e8edf8; color:#1a2f54; font-size:0.68rem; font-weight:600; padding:2px 9px; border-radius:20px; display:inline-block; }
+    .bvio { background:#f0ebff; color:#7c3aed; font-size:0.68rem; font-weight:600; padding:2px 9px; border-radius:20px; display:inline-block; }
+    .bo { background:#e8f8ef; color:#27ae60; font-size:0.68rem; padding:2px 8px; border-radius:20px; font-weight:600; white-space:nowrap; }
+    .bd { background:#fff3e0; color:#e67e22; font-size:0.68rem; padding:2px 8px; border-radius:20px; font-weight:600; white-space:nowrap; }
+    .pill { display:inline-block; padding:2px 9px; border:1px solid #dde3ef; border-radius:20px; font-size:0.68rem; color:#4a5568; margin:2px; }
+    .carte-stat, .carte-match, .carte-profil, .carte-offre, .carte-pp, .carte-matching { background:white; border:1px solid #dde3ef; border-radius:10px; }
+    .btn-navy { background:#1a2f54; color:white; border:none; border-radius:7px; padding:7px 16px; font-size:0.8rem; font-weight:600; cursor:pointer; }
+    .btn-outline-sm { background:white; color:#1a2f54; border:1px solid #dde3ef; border-radius:7px; padding:6px 14px; font-size:0.8rem; font-weight:500; cursor:pointer; }
+    .barre-recherche { width:100%; padding:10px 14px 10px 38px; border:1.5px solid #dde3ef; border-radius:9px; font-size:0.85rem; background:white url('data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="%238a94a8" viewBox="0 0 16 16"%3E%3Cpath d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.656a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/%3E%3C/svg%3E') no-repeat 11px center; outline:none; }
+    .tabs-explorer { display:flex; border-bottom:2px solid #dde3ef; margin-bottom:14px; }
+    .tab-exp { padding:7px 18px; font-size:0.85rem; font-weight:500; color:#8a94a8; cursor:pointer; border-bottom:2px solid transparent; margin-bottom:-2px; }
+    .tab-exp.actif { color:#1a2f54; border-bottom-color:#1a2f54; font-weight:700; }
+    .filter-btn { padding:5px 18px; border-radius:20px; font-size:0.78rem; font-weight:500; cursor:pointer; border:1px solid #dde3ef; background:white; margin-right:8px; }
+    .filter-btn.actif { background:#1a2f54; color:white; border-color:#1a2f54; }
+    .barre-bg { height:5px; background:#e8ecf4; border-radius:4px; margin-top:3px; }
+    .barre-fill { height:5px; border-radius:4px; }
+    .progress-label { display:flex; justify-content:space-between; font-size:0.72rem; color:#8a94a8; margin-top:6px; }
+    .carte-matching.meilleure { border-color:#2ecc71; background:linear-gradient(135deg,#f0fff6,white); }
+    .label-meilleure { font-size:0.72rem; font-weight:700; color:#27ae60; margin-bottom:10px; }
+    .grille-dispo { display:grid; grid-template-columns:50px repeat(5,1fr); gap:4px; font-size:0.73rem; }
+    .dh { color:#8a94a8; font-weight:500; text-align:center; padding:3px; }
+    .dj { color:#3a4460; font-weight:600; display:flex; align-items:center; }
+    .dc { height:22px; border-radius:5px; background:#e8ecf4; }
+    .dc.on { background:#1a2f54; }
+    .grand-avatar { width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.3rem; color:white; }
+    .msg-layout { display:flex; height:calc(100vh - 90px); background:white; border-radius:10px; border:1px solid #dde3ef; overflow:hidden; }
+    .msg-gauche { width:210px; border-right:1px solid #dde3ef; display:flex; flex-direction:column; }
+    .msg-titre { padding:14px 16px; font-size:0.95rem; font-weight:700; color:#1a2f54; border-bottom:1px solid #dde3ef; }
+    .msg-vide { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:16px; font-size:0.76rem; color:#8a94a8; }
+    .msg-droite { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:#8a94a8; }
+    h2.page-titre { font-size:1.35rem; font-weight:800; color:#1a2f54; margin-bottom:4px; }
+    p.page-sub { color:#8a94a8; font-size:0.83rem; margin-bottom:18px; }
+  </style>
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="p-3 border-bottom border-white border-opacity-10">
+    <div class="d-flex align-items-center gap-2">
+      <div class="bg-success rounded-2 d-flex align-items-center justify-content-center text-white fw-bold" style="width:32px;height:32px">M</div>
+      <div><div class="text-white fw-bold small">IFRI</div><div class="text-success small">MentorLink</div></div>
+    </div>
+  </div>
+  
+  <nav class="mt-2">
+    <a href="/" class="nav-item d-block {% if active == 'dashboard' %}actif{% endif %}">
+      <span>⊞</span> Tableau de bord
+    </a>
+    <a href="/matching" class="nav-item d-block {% if active == 'matching' %}actif{% endif %}">
+      <span>◇</span> Matching
+    </a>
+    <a href="/explorer" class="nav-item d-block {% if active == 'explorer' %}actif{% endif %}">
+      <span>◎</span> Explorer
+    </a>
+    <a href="/messagerie" class="nav-item d-block {% if active == 'messagerie' %}actif{% endif %}">
+      <span>✉</span> Messagerie
+    </a>
+    <a href="/profil" class="nav-item d-block {% if active == 'profil' %}actif{% endif %}">
+      <span>⊙</span> Mon profil
+    </a>
+  </nav>
+  
+  <div class="position-absolute bottom-0 start-0 end-0 p-3 border-top border-white border-opacity-10">
+    <div class="d-flex align-items-center gap-2">
+      <div class="rounded-circle bg-primary d-flex align-items-center justify-content-center text-white fw-bold" style="width:32px;height:32px">{{ user.initiales }}</div>
+      <div>
+        <div class="text-white small fw-semibold">{{ user.nom }}</div>
+        <div class="text-white-50 small">{{ user.filiere }} · {{ user.niveau }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="main">
+  {% block content %}{% endblock %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

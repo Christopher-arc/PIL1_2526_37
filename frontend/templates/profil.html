@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <h2 class="page-titre" style="margin:0">Mon Profil</h2>
+  <button class="btn-modifier btn btn-light border">✎ Modifier</button>
+</div>
+
+<div class="carte-pp p-3 mb-3">
+  <div class="d-flex align-items-center gap-3 flex-wrap">
+    <div class="grand-avatar bg-primary">{{ user.initiales }}</div>
+    <div>
+      <div class="fs-4 fw-bold text-dark">{{ user.nom }}</div>
+      <div class="mb-2">
+        <span class="bb me-1">{{ user.filiere }}</span>
+        <span class="bb me-1">{{ user.niveau }}</span>
+        <span class="bvio">{{ user.statut }}</span>
+      </div>
+      <div class="small text-secondary">{{ user.email }}</div>
+      <div class="small text-secondary mt-1">{{ user.sessions }} sessions · Membre depuis <strong>{{ user.membre_depuis }}</strong></div>
+    </div>
+  </div>
+</div>
+
+<div class="carte-pp p-3 mb-3">
+  <div class="fw-bold text-dark mb-2">Biographie</div>
+  <p class="small text-secondary mb-0">{{ user.biographie if user.biographie else "Aucune biographie renseignée." }}</p>
+</div>
+
+<div class="carte-pp p-3 mb-3">
+  <div class="fw-bold text-dark mb-2">Compétences <span class="text-secondary fw-normal small">({{ user.competences|length }} sélectionnées)</span></div>
+  <div>{% for c in user.competences %}<span class="pill">{{ c }}</span>{% endfor %}</div>
+</div>
+
+<div class="carte-pp p-3 mb-3">
+  <div class="fw-bold text-dark mb-3">Disponibilités hebdomadaires</div>
+  <div class="grille-dispo">
+    <div class="dh">Jour</div><div class="dh">08h-10h</div><div class="dh">10h-12h</div><div class="dh">14h-16h</div><div class="dh">16h-18h</div><div class="dh">18h-20h</div>
+    {% for jour, creneaux in disponibilites.items() %}
+    <div class="dj">{{ jour[:3] }}</div>
+    {% for creneau in creneaux %}
+    <div class="dc {% if creneau %}on{% endif %}"></div>
+    {% endfor %}
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}
