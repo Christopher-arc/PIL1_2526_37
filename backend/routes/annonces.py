@@ -25,10 +25,10 @@ def liste():
 
     cur = mysql.connection.cursor()
 
-    cur.execute("SELECT * FROM `Matières`")
+    cur.execute("SELECT * FROM `Matieres`")
     matieres = cur.fetchall()
 
-    cur.execute("SELECT * FROM `Disponibilités`")
+    cur.execute("SELECT * FROM `Disponibilites`")
     dispos = cur.fetchall()
 
     cur.execute("SELECT id_matiere FROM BESOIN WHERE id_utilisateur = %s", (session['id'],))
@@ -37,7 +37,7 @@ def liste():
     cur.execute("SELECT id_matiere FROM MAITRISE WHERE id_utilisateur = %s", (session['id'],))
     mes_competences = [r['id_matiere'] for r in cur.fetchall()]
 
-    cur.execute("SELECT id_annonce FROM `Réponses` WHERE id_utilisateur = %s", (session['id'],))
+    cur.execute("SELECT id_annonce FROM `Reponses` WHERE id_utilisateur = %s", (session['id'],))
     deja_repondu = [r['id_annonce'] for r in cur.fetchall()]
 
     annonces_pertinentes = []
@@ -53,7 +53,7 @@ def liste():
             LEFT JOIN ANNONCE_MATIERE am ON a.id_annonce = am.id_annonce
             LEFT JOIN `Matières` m ON am.id_matiere = m.id_matiere
             LEFT JOIN ANNONCE_DISPONIBILITE ad ON a.id_annonce = ad.id_annonce
-            LEFT JOIN `Disponibilités` d ON ad.id_dispo = d.id_dispo
+            LEFT JOIN `Disponibilites` d ON ad.id_dispo = d.id_dispo
             WHERE a.statut = 'actif'
             AND a.id_utilisateur != %s
             AND (
@@ -159,7 +159,7 @@ def repondre():
         return redirect(url_for('annonces.liste'))
 
     cur.execute(
-        "SELECT id_reponse FROM `Réponses` WHERE id_utilisateur = %s AND id_annonce = %s",
+        "SELECT id_reponse FROM `Reponses` WHERE id_utilisateur = %s AND id_annonce = %s",
         (session['id'], id_annonce)
     )
     if cur.fetchone():
@@ -168,7 +168,7 @@ def repondre():
         return redirect(url_for('annonces.liste'))
 
     cur.execute(
-        "INSERT INTO `Réponses` (id_utilisateur, id_annonce, message_accomp) VALUES (%s, %s, %s)",
+        "INSERT INTO `Reponses` (id_utilisateur, id_annonce, message_accomp) VALUES (%s, %s, %s)",
         (session['id'], id_annonce, message_accomp)
     )
     mysql.connection.commit()
@@ -192,21 +192,21 @@ def voir_profil(id_utilisateur):
 
     cur.execute("""
         SELECT m.nom_matiere FROM MAITRISE ma
-        JOIN `Matières` m ON ma.id_matiere = m.id_matiere
+        JOIN `Matieres` m ON ma.id_matiere = m.id_matiere
         WHERE ma.id_utilisateur = %s
     """, (id_utilisateur,))
     points_forts = cur.fetchall()
 
     cur.execute("""
         SELECT m.nom_matiere FROM BESOIN b
-        JOIN `Matières` m ON b.id_matiere = m.id_matiere
+        JOIN `Matieres` m ON b.id_matiere = m.id_matiere
         WHERE b.id_utilisateur = %s
     """, (id_utilisateur,))
     points_faibles = cur.fetchall()
 
     cur.execute("""
         SELECT d.jour, d.heure_debut, d.heure_fin FROM USER_DISPONIBILITE ud
-        JOIN `Disponibilités` d ON ud.id_dispo = d.id_dispo
+        JOIN `Disponibilites` d ON ud.id_dispo = d.id_dispo
         WHERE ud.id_utilisateur = %s
     """, (id_utilisateur,))
     dispos = cur.fetchall()

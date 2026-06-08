@@ -9,7 +9,7 @@ auth_bp = Blueprint('auth', __name__)
 def inscription():
     if request.method == 'GET':
         cur = mysql.connection.cursor()
-        cur.execute("SELECT * FROM Matières")
+        cur.execute("SELECT * FROM Matieres")
         matieres = cur.fetchall()
         cur.close()
         return render_template('inscription.html', matieres=matieres)
@@ -26,7 +26,7 @@ def inscription():
     if not all([nom, prenom, telephone, email, mdp, filiere, niveau]):
         flash('Tous les champs sont obligatoires.', 'danger')
         cur = mysql.connection.cursor()
-        cur.execute("SELECT * FROM Matières")
+        cur.execute("SELECT * FROM Matieres")
         matieres = cur.fetchall()
         cur.close()
         return render_template('inscription.html', matieres=matieres)
@@ -34,7 +34,7 @@ def inscription():
     if mdp != mdp_conf:
         flash('Les mots de passe ne correspondent pas.', 'danger')
         cur = mysql.connection.cursor()
-        cur.execute("SELECT * FROM Matières")
+        cur.execute("SELECT * FROM Matieres")
         matieres = cur.fetchall()
         cur.close()
         return render_template('inscription.html', matieres=matieres)
@@ -42,7 +42,7 @@ def inscription():
     if len(mdp) < 6:
         flash('Le mot de passe doit contenir au moins 6 caractères.', 'danger')
         cur = mysql.connection.cursor()
-        cur.execute("SELECT * FROM Matières")
+        cur.execute("SELECT * FROM Matieres")
         matieres = cur.fetchall()
         cur.close()
         return render_template('inscription.html', matieres=matieres)
@@ -56,7 +56,7 @@ def inscription():
         cur.close()
         flash('Email ou téléphone déjà utilisé.', 'danger')
         cur = mysql.connection.cursor()
-        cur.execute("SELECT * FROM Matières")
+        cur.execute("SELECT * FROM Matieres")
         matieres = cur.fetchall()
         cur.close()
         return render_template('inscription.html', matieres=matieres)

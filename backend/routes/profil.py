@@ -34,7 +34,7 @@ def profil():
         cur.execute("SELECT * FROM Utilisateurs WHERE id_utilisateur = %s", (session['id'],))
         utilisateur = cur.fetchone()
 
-        cur.execute("SELECT * FROM `Matières`")
+        cur.execute("SELECT * FROM `Matieres`")
         matieres = cur.fetchall()
 
         cur.execute("SELECT id_matiere FROM MAITRISE WHERE id_utilisateur = %s", (session['id'],))
@@ -43,7 +43,7 @@ def profil():
         cur.execute("SELECT id_matiere FROM BESOIN WHERE id_utilisateur = %s", (session['id'],))
         points_faibles = [r['id_matiere'] for r in cur.fetchall()]
 
-        cur.execute("SELECT * FROM `Disponibilités`")
+        cur.execute("SELECT * FROM `Disponibilites`")
         dispos = cur.fetchall()
 
         cur.execute("SELECT id_dispo FROM USER_DISPONIBILITE WHERE id_utilisateur = %s", (session['id'],))
@@ -81,7 +81,7 @@ def profil():
     if photo_nom:
         cur.execute(
             "UPDATE Utilisateurs SET nom=%s, prenom=%s, telephone=%s, filiere=%s, niveau=%s, Bio=%s, photo=%s WHERE id_utilisateur=%s",
-            (nom, prenom, telephone, filiere, niveau, bio, photo_nom, session['id'])
+            (nom, prenom, telephone, filiere, niveau, Bio, photo_nom, session['id'])
         )
     else:
         cur.execute(
@@ -207,10 +207,10 @@ def mes_annonces():
     """, (session['id'],))
     annonces = cur.fetchall()
 
-    cur.execute("SELECT * FROM `Matières`")
+    cur.execute("SELECT * FROM `Matieres`")
     matieres = cur.fetchall()
 
-    cur.execute("SELECT * FROM `Disponibilités`")
+    cur.execute("SELECT * FROM `Disponibilites`")
     dispos = cur.fetchall()
 
     cur.close()
