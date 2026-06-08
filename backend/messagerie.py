@@ -40,5 +40,30 @@ def get_discussions():
     cursor.close()
     db.close()
     return jsonify(discussions)
+
+@app.route('/discussion/<int:id_discussion>')
+def get_messages(id_discussion):
+    user_id = session.get('user_id', 1)
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("""
+        UPDATE Messages SET lu = TRUE
+        WHERE id_discussion = %s AND id_utilisateur != %s
+    """, (id_discussion, user_id))
+    db.commit()
+    cursor.execute("""
+        SELECT m.id_message, m.contenu, m.date_envoi,
+               u.nom, u.prenom, u.id_utilisateur
+        FROM Messages m
+        JOIN Utilisateurs u ON m.id_utilisateur = u.id_utilisateur
+        WHERE m.id_discussion = %s
+        ORDER BY m.date_envoi ASC
+    """, (id_discussion,))
+    messages = cursor.fetchall()
+    for msg in messages:
+        msg['date_envoi'] = msg['date_envoi'].strftime('%H:%M')
+    cursor.close()
+    db.close()
+    return jsonify(messages)
 if __name__ == '__main__':
     app.run(debug=True, port=5001)  
