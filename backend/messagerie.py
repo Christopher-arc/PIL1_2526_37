@@ -1,8 +1,9 @@
 from flask import Flask, jsonify, session
+from flask_socketio import SocketIO, emit, join_room
 import mysql.connector
 app = Flask(__name__)
 app.secret_key = 'mentorlink_2026'
-
+socketio = SocketIO(app, cors_allowed_origins="*")
 DB_CONFIG = {
     'host': 'localhost',
     'user': 'root',
@@ -83,5 +84,36 @@ def get_notifications():
     cursor.close()
     db.close()
     return jsonify({'count': len(notifs), 'notifications': notifs})
+
+@socketio.on('rejoindre_discussion')
+def on_join(data):
+    room = str(data['id_discussion'])
+    join_room(room)
+
+@socketio.on('send_message')
+def handle_message(data):
+    user_id = session.get('user_id', 1)
+    id_discussion = data['id_discussion']
+    contenu = data['contenu']
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("""
+        INSERT INTO Messages (id_discussion, id_utilisateur, contenu, lu)
+        VALUES (%s, %s, %s, FALSE)
+    """, (id_discussion, user_id, contenu))
+    db.commit()
+    id_message = cursor.lastrowid
+    cursor.execute("SELECT nom, prenom FROM Utilisateurs WHERE id_utilisateur = %s", (user_id,))
+    user = cursor.fetchone()
+    cursor.close()
+    db.close()
+    emit('receive_message', {
+        'id_message': id_message,
+        'contenu': contenu,
+        'nom': user['nom'],
+        'prenom': user['prenom'],
+        'id_utilisateur': user_id,
+        'date_envoi': __import__('datetime').datetime.now().strftime('%H:%M')
+    }, room=str(id_discussion))
 if __name__ == '__main__':
-    app.run(debug=True, port=5001)  
+    socketio.run(app, debug=True, port=5001)
