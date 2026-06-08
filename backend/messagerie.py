@@ -65,5 +65,23 @@ def get_messages(id_discussion):
     cursor.close()
     db.close()
     return jsonify(messages)
+
+@app.route('/notifications')
+def get_notifications():
+    user_id = session.get('user_id', 1)
+    db = get_db()
+    cursor = db.cursor(dictionary=True)
+    cursor.execute("""
+        SELECT id_notification, type_notif, contenu, date_creation
+        FROM Notifications
+        WHERE id_utilisateur = %s AND lu = FALSE
+        ORDER BY date_creation DESC
+    """, (user_id,))
+    notifs = cursor.fetchall()
+    for n in notifs:
+        n['date_creation'] = n['date_creation'].strftime('%d/%m %H:%M')
+    cursor.close()
+    db.close()
+    return jsonify({'count': len(notifs), 'notifications': notifs})
 if __name__ == '__main__':
     app.run(debug=True, port=5001)  
