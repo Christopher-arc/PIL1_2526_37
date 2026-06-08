@@ -1,0 +1,623 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IFRI MentorLink - Messagerie</title>
+  <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', sans-serif
+    }
+
+    body {
+      background: #f0f2f5;
+      display: flex;
+      flex-direction: column;
+      height: 100vh
+    }
+
+    /* Navbar */
+    .navbar {
+      background: #064597;
+      color: #1f417e;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .15)
+    }
+
+    .navbar h1 {
+      font-size: 20px;
+      flex: 1
+    }
+
+    .notif-btn {
+      background: rgba(255, 255, 255, .15);
+      border: none;
+      color: #fff;
+      padding: 8px 16px;
+      border-radius: 20px;
+      cursor: pointer;
+      font-size: 14px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      gap: 6px
+    }
+
+    .notif-btn:hover {
+      background: rgba(255, 255, 255, .25)
+    }
+
+    .notif-badge {
+      background: #ff5252;
+      color: #fff;
+      border-radius: 50%;
+      padding: 1px 7px;
+      font-size: 12px;
+      font-weight: 700;
+      position: absolute;
+      top: -6px;
+      right: -6px;
+      display: none
+    }
+
+    .notif-dropdown {
+      position: absolute;
+      top: 50px;
+      right: 24px;
+      background: #fff;
+      color: #333;
+      width: 340px;
+      border-radius: 10px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, .2);
+      display: none;
+      z-index: 100;
+      max-height: 400px;
+      overflow-y: auto
+    }
+
+    .notif-dropdown.show {
+      display: block
+    }
+
+    .notif-item {
+      padding: 14px 16px;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+      cursor: pointer
+    }
+
+    .notif-item:last-child {
+      border: none
+    }
+
+    .notif-item:hover {
+      background: #f5f7fa
+    }
+
+    .notif-type {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+      font-weight: 600;
+      margin-bottom: 4px
+    }
+
+    .notif-type.message {
+      background: #e3f2fd;
+      color: #1565c0
+    }
+
+    .notif-type.match {
+      background: #e8f5e9;
+      color: #2e7d32
+    }
+
+    .notif-type.réponse {
+      background: #fff3e0;
+      color: #e65100
+    }
+
+    /* Layout */
+    .container {
+      display: flex;
+      flex: 1;
+      overflow: hidden
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 360px;
+      min-width: 360px;
+      background: #fff;
+      border-right: 1px solid #e0e0e0;
+      display: flex;
+      flex-direction: column
+    }
+
+    .sidebar-header {
+      padding: 18px 20px;
+      border-bottom: 1px solid #e0e0e0
+    }
+
+    .sidebar-header h2 {
+      font-size: 17px;
+      color: #333
+    }
+
+    .search-bar {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1px solid #ddd;
+      border-radius: 24px;
+      font-size: 14px;
+      margin-top: 10px;
+      outline: none
+    }
+
+    .search-bar:focus {
+      border-color: #1a73e8
+    }
+
+    .conv-list {
+      flex: 1;
+      overflow-y: auto
+    }
+
+    .conv-item {
+      padding: 14px 20px;
+      border-bottom: 1px solid #f0f0f0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      transition: background .15s
+    }
+
+    .conv-item:hover {
+      background: #f5f7fa
+    }
+
+    .conv-item.active {
+      background: #e8f0fe
+    }
+
+    .conv-avatar {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: #1a73e8;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      flex-shrink: 0
+    }
+
+    .conv-info {
+      flex: 1;
+      min-width: 0
+    }
+
+    .conv-name {
+      font-weight: 600;
+      font-size: 14px;
+      color: #333
+    }
+
+    .conv-preview {
+      font-size: 13px;
+      color: #777;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px
+    }
+
+    .conv-meta {
+      text-align: right;
+      flex-shrink: 0
+    }
+
+    .conv-time {
+      font-size: 11px;
+      color: #999
+    }
+
+    .conv-unread {
+      background: #1a73e8;
+      color: #fff;
+      border-radius: 50%;
+      padding: 1px 7px;
+      font-size: 11px;
+      font-weight: 700;
+      margin-top: 4px;
+      display: inline-block;
+      min-width: 20px;
+      text-align: center
+    }
+
+    /* Chat area */
+    .chat-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #f7f9fc
+    }
+
+    .chat-placeholder {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #999;
+      font-size: 16px
+    }
+
+    .chat-header {
+      padding: 16px 24px;
+      background: #fff;
+      border-bottom: 1px solid #e0e0e0;
+      display: none;
+      align-items: center;
+      gap: 12px
+    }
+
+    .chat-header .conv-avatar {
+      width: 38px;
+      height: 38px;
+      font-size: 14px
+    }
+
+    .chat-header .conv-name {
+      font-size: 15px
+    }
+
+    .chat-messages {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+      display: none;
+      flex-direction: column
+    }
+
+    .message {
+      max-width: 70%;
+      margin-bottom: 14px;
+      padding: 10px 16px;
+      border-radius: 18px;
+      font-size: 14px;
+      line-height: 1.5;
+      position: relative;
+      word-wrap: break-word
+    }
+
+    .message.sent {
+      background: #1a73e8;
+      color: #fff;
+      align-self: flex-end;
+      border-bottom-right-radius: 4px
+    }
+
+    .message.received {
+      background: #fff;
+      color: #333;
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .08)
+    }
+
+    .message .msg-time {
+      font-size: 10px;
+      opacity: .7;
+      margin-top: 4px;
+      text-align: right
+    }
+
+    .message.received .msg-sender {
+      font-size: 11px;
+      font-weight: 600;
+      color: #1a73e8;
+      margin-bottom: 2px
+    }
+
+    .chat-input-area {
+      display: none;
+      padding: 14px 24px;
+      background: #fff;
+      border-top: 1px solid #e0e0e0;
+      gap: 10px;
+      align-items: center
+    }
+
+    .chat-input-area input {
+      flex: 1;
+      padding: 12px 16px;
+      border: 1px solid #ddd;
+      border-radius: 24px;
+      font-size: 14px;
+      outline: none
+    }
+
+    .chat-input-area input:focus {
+      border-color: #1a73e8
+    }
+
+    .chat-input-area button {
+      background: #1a73e8;
+      color: #fff;
+      border: none;
+      border-radius: 50%;
+      width: 44px;
+      height: 44px;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center
+    }
+
+    .chat-input-area button:hover {
+      background: #1557b0
+    }
+
+    .chat-input-area button:disabled {
+      background: #ccc;
+      cursor: not-allowed
+    }
+
+    .loading {
+      text-align: center;
+      color: #999;
+      padding: 20px;
+      font-size: 13px
+    }
+  </style>
+</head>
+
+<body>
+
+  <nav class="navbar">
+    <h1>IFRI MentorLink</h1>
+    <div style="position:relative">
+      <button class="notif-btn" onclick="toggleNotifs()">
+        Notifications <span class="notif-badge" id="notifBadge">0</span>
+      </button>
+      <div class="notif-dropdown" id="notifDropdown">
+        <div style="padding:14px 16px;font-weight:600;border-bottom:1px solid #eee;font-size:14px">Notifications</div>
+        <div id="notifList"></div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container">
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <h2>Discussions</h2>
+        <input class="search-bar" type="text" placeholder="Rechercher..." oninput="filterConversations(this.value)">
+      </div>
+      <div class="conv-list" id="convList"></div>
+    </aside>
+
+    <main class="chat-area">
+      <div class="chat-placeholder" id="chatPlaceholder">
+        Sélectionnez une conversation pour commencer
+      </div>
+      <div class="chat-header" id="chatHeader">
+        <div class="conv-avatar" id="chatAvatar">?</div>
+        <div class="conv-name" id="chatName">Interlocuteur</div>
+      </div>
+      <div class="chat-messages" id="chatMessages"></div>
+      <div class="chat-input-area" id="chatInputArea">
+        <input type="text" id="messageInput" placeholder="Écrivez votre message..."
+          onkeydown="if(event.key==='Enter') sendMessage()">
+        <button onclick="sendMessage()" id="sendBtn">➤</button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    const socket = io();
+    let currentDiscussionId = null;
+    let currentUserId = 1;
+
+    socket.on('connect', () => console.log('SocketIO connecté'));
+
+    socket.on('receive_message', (msg) => {
+      if (currentDiscussionId == msg.id_discussion || (currentDiscussionId && !msg.id_discussion)) {
+        appendMessage(msg);
+        scrollChat();
+      }
+      loadConversations();
+      if (msg.id_utilisateur != currentUserId) {
+        updateNotifCount();
+      }
+    });
+
+    async function loadConversations() {
+      try {
+        const res = await fetch('/discussions');
+        const data = await res.json();
+        const list = document.getElementById('convList');
+        list.innerHTML = '';
+        if (data.length === 0) {
+          list.innerHTML = '<div class="loading">Aucune conversation</div>';
+          return;
+        }
+        data.forEach(c => {
+          const initials = (c.prenom?.[0] || '') + (c.nom?.[0] || '');
+          const div = document.createElement('div');
+          div.className = 'conv-item' + (c.id_discussion === currentDiscussionId ? ' active' : '');
+          div.innerHTML = `
+        <div class="conv-avatar">${initials || '?'}</div>
+        <div class="conv-info">
+          <div class="conv-name">${c.prenom} ${c.nom}</div>
+          <div class="conv-preview">${c.dernier_message || 'Aucun message'}</div>
+        </div>
+        <div class="conv-meta">
+          <div class="conv-time">${c.date_creation}</div>
+          ${c.non_lus > 0 ? `<div class="conv-unread">${c.non_lus}</div>` : ''}
+        </div>
+      `;
+          div.onclick = () => openDiscussion(c.id_discussion);
+          list.appendChild(div);
+        });
+      } catch (e) {
+        console.error('Erreur chargement conversations:', e);
+      }
+    }
+
+    async function openDiscussion(id) {
+      currentDiscussionId = id;
+      document.getElementById('chatPlaceholder').style.display = 'none';
+      document.getElementById('chatHeader').style.display = 'flex';
+      document.getElementById('chatMessages').style.display = 'flex';
+      document.getElementById('chatInputArea').style.display = 'flex';
+      document.getElementById('chatMessages').innerHTML = '<div class="loading">Chargement...</div>';
+      document.getElementById('sendBtn').disabled = true;
+
+      socket.emit('join', { discussion_id: id });
+
+      try {
+        const [convRes, msgRes] = await Promise.all([
+          fetch('/discussions'),
+          fetch(`/discussion/${id}`)
+        ]);
+        const convs = await convRes.json();
+        const msgs = await msgRes.json();
+
+        const conv = convs.find(c => c.id_discussion == id);
+        if (conv) {
+          const initials = (conv.prenom?.[0] || '') + (conv.nom?.[0] || '');
+          document.getElementById('chatAvatar').textContent = initials || '?';
+          document.getElementById('chatName').textContent = `${conv.prenom} ${conv.nom}`;
+        }
+
+        const container = document.getElementById('chatMessages');
+        container.innerHTML = '';
+        msgs.forEach(m => appendMessage(m));
+        scrollChat();
+        document.getElementById('sendBtn').disabled = false;
+        document.getElementById('messageInput').focus();
+
+        fetch(`/discussion/${id}/read`, { method: 'POST' });
+        loadConversations();
+        updateNotifCount();
+      } catch (e) {
+        console.error('Erreur chargement discussion:', e);
+      }
+    }
+
+    function appendMessage(m) {
+      const container = document.getElementById('chatMessages');
+      const isMine = m.id_utilisateur == currentUserId;
+      const div = document.createElement('div');
+      div.className = `message ${isMine ? 'sent' : 'received'}`;
+      div.innerHTML = `
+    ${!isMine ? `<div class="msg-sender">${m.prenom} ${m.nom}</div>` : ''}
+    ${m.contenu}
+    <div class="msg-time">${m.date_envoi}</div>
+  `;
+      container.appendChild(div);
+    }
+
+    function scrollChat() {
+      const container = document.getElementById('chatMessages');
+      setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const contenu = input.value.trim();
+      if (!contenu || !currentDiscussionId) return;
+      input.value = '';
+      document.getElementById('sendBtn').disabled = true;
+      socket.emit('send_message', { discussion_id: currentDiscussionId, contenu });
+      setTimeout(() => { document.getElementById('sendBtn').disabled = false; }, 300);
+    }
+
+    function filterConversations(query) {
+      const items = document.querySelectorAll('.conv-item');
+      const q = query.toLowerCase();
+      items.forEach(item => {
+        const name = item.querySelector('.conv-name')?.textContent?.toLowerCase() || '';
+        item.style.display = name.includes(q) ? 'flex' : 'none';
+      });
+    }
+
+    // Notifications
+    function toggleNotifs() {
+      document.getElementById('notifDropdown').classList.toggle('show');
+      loadNotifications();
+    }
+
+    async function loadNotifications() {
+      try {
+        const res = await fetch('/notifications');
+        const data = await res.json();
+        const list = document.getElementById('notifList');
+        list.innerHTML = '';
+        if (data.length === 0) {
+          list.innerHTML = '<div style="padding:20px;text-align:center;color:#999;font-size:13px">Aucune notification</div>';
+          return;
+        }
+        data.forEach(n => {
+          const div = document.createElement('div');
+          div.className = 'notif-item';
+          div.innerHTML = `
+        <div class="notif-type ${n.type_notif}">${n.type_notif}</div>
+        <div>${n.contenu}</div>
+        <div style="font-size:11px;color:#999;margin-top:4px">${n.date_creation}</div>
+      `;
+          list.appendChild(div);
+        });
+      } catch (e) {
+        console.error('Erreur chargement notifications:', e);
+      }
+    }
+
+    async function updateNotifCount() {
+      try {
+        const res = await fetch('/notifications/count');
+        const data = await res.json();
+        const badge = document.getElementById('notifBadge');
+        if (data.count > 0) {
+          badge.textContent = data.count;
+          badge.style.display = 'inline';
+        } else {
+          badge.style.display = 'none';
+        }
+      } catch (e) {
+        console.error('Erreur compteur notifications:', e);
+      }
+    }
+
+    // Close dropdown on click outside
+    document.addEventListener('click', (e) => {
+      const dd = document.getElementById('notifDropdown');
+      const btn = document.querySelector('.notif-btn');
+      if (!btn.contains(e.target) && !dd.contains(e.target)) {
+        dd.classList.remove('show');
+      }
+    });
+
+    // Polling notif count every 3s (repli si SocketIO pas assez fiable)
+    setInterval(updateNotifCount, 3000);
+
+    // Init
+    loadConversations();
+    updateNotifCount();
+  </script>
+</body>
+
+</html>
