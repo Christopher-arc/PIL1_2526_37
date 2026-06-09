@@ -198,9 +198,9 @@ def mes_annonces():
                GROUP_CONCAT(DISTINCT CONCAT(d.jour, ' ', d.heure_debut, '-', d.heure_fin) SEPARATOR ' | ') AS dispos_annonce
         FROM Annonces a
         LEFT JOIN ANNONCE_MATIERE am ON a.id_annonce = am.id_annonce
-        LEFT JOIN `Matières` m ON am.id_matiere = m.id_matiere
+        LEFT JOIN `Matieres` m ON am.id_matiere = m.id_matiere
         LEFT JOIN ANNONCE_DISPONIBILITE ad ON a.id_annonce = ad.id_annonce
-        LEFT JOIN `Disponibilités` d ON ad.id_dispo = d.id_dispo
+        LEFT JOIN `Disponibilites` d ON ad.id_dispo = d.id_dispo
         WHERE a.id_utilisateur = %s
         GROUP BY a.id_annonce
         ORDER BY a.date_creation DESC
