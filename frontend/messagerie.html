@@ -15,7 +15,7 @@
     }
 
     body {
-      background: #f0f2f5;
+      background: #fff;
       display: flex;
       flex-direction: column;
       height: 100vh
@@ -23,8 +23,8 @@
 
     /* Navbar */
     .navbar {
-      background: #064597;
-      color: #1f417e;
+      background: #0a1e3d;
+      color: #fff;
       padding: 14px 24px;
       display: flex;
       align-items: center;
@@ -34,11 +34,49 @@
 
     .navbar h1 {
       font-size: 20px;
-      flex: 1
+      flex: 1;
+      font-weight: 600
+    }
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 14px
+    }
+    .logo-box {
+      width: 42px;
+      height: 42px;
+      background: #00a86b;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0
+    }
+    .logo-box span {
+      color: #fff;
+      font-size: 22px;
+      font-weight: 700
+    }
+    .logo-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2
+    }
+    .logo-ifri {
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 1px
+    }
+    .logo-mentor {
+      color: #00a86b;
+      font-size: 14px;
+      font-weight: 600;
+      letter-spacing: .5px
     }
 
     .notif-btn {
-      background: rgba(255, 255, 255, .15);
+      background: rgba(255, 255, 255, .12);
       border: none;
       color: #fff;
       padding: 8px 16px;
@@ -48,11 +86,16 @@
       position: relative;
       display: flex;
       align-items: center;
-      gap: 6px
+      gap: 6px;
+      transition: background .2s
+    }
+
+    .notif-wrapper {
+      position: relative
     }
 
     .notif-btn:hover {
-      background: rgba(255, 255, 255, .25)
+      background: rgba(255, 255, 255, .22)
     }
 
     .notif-badge {
@@ -65,7 +108,8 @@
       position: absolute;
       top: -6px;
       right: -6px;
-      display: none
+      display: none;
+      border: 2px solid #0a1e3d
     }
 
     .notif-dropdown {
@@ -111,6 +155,26 @@
       margin-bottom: 4px
     }
 
+    .notif-header {
+      padding: 14px 16px;
+      font-weight: 600;
+      border-bottom: 1px solid #eee;
+      font-size: 14px
+    }
+
+    .notif-empty {
+      padding: 20px;
+      text-align: center;
+      color: #999;
+      font-size: 13px
+    }
+
+    .notif-date {
+      font-size: 11px;
+      color: #999;
+      margin-top: 4px
+    }
+
     .notif-type.message {
       background: #e3f2fd;
       color: #1565c0
@@ -137,34 +201,40 @@
     .sidebar {
       width: 360px;
       min-width: 360px;
-      background: #fff;
-      border-right: 1px solid #e0e0e0;
+      background: #0a1e3d;
       display: flex;
       flex-direction: column
     }
 
     .sidebar-header {
-      padding: 18px 20px;
-      border-bottom: 1px solid #e0e0e0
+      padding: 20px 20px 14px
     }
 
     .sidebar-header h2 {
       font-size: 17px;
-      color: #333
+      color: #fff;
+      font-weight: 600
     }
 
     .search-bar {
       width: 100%;
       padding: 10px 14px;
-      border: 1px solid #ddd;
+      border: none;
       border-radius: 24px;
       font-size: 14px;
-      margin-top: 10px;
-      outline: none
+      margin-top: 12px;
+      outline: none;
+      background: rgba(255, 255, 255, .15);
+      color: #fff;
+      transition: background .2s
+    }
+
+    .search-bar::placeholder {
+      color: rgba(255, 255, 255, .5)
     }
 
     .search-bar:focus {
-      border-color: #1a73e8
+      background: rgba(255, 255, 255, .25)
     }
 
     .conv-list {
@@ -172,29 +242,38 @@
       overflow-y: auto
     }
 
+    .conv-list::-webkit-scrollbar {
+      width: 4px
+    }
+
+    .conv-list::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, .2);
+      border-radius: 2px
+    }
+
     .conv-item {
       padding: 14px 20px;
-      border-bottom: 1px solid #f0f0f0;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 12px;
-      transition: background .15s
+      transition: background .15s;
+      border-bottom: 1px solid rgba(255, 255, 255, .06)
     }
 
     .conv-item:hover {
-      background: #f5f7fa
+      background: rgba(255, 255, 255, .08)
     }
 
     .conv-item.active {
-      background: #e8f0fe
+      background: rgba(255, 255, 255, .14)
     }
 
     .conv-avatar {
       width: 44px;
       height: 44px;
       border-radius: 50%;
-      background: #1a73e8;
+      background: #2d4a7a;
       color: #fff;
       display: flex;
       align-items: center;
@@ -212,12 +291,12 @@
     .conv-name {
       font-weight: 600;
       font-size: 14px;
-      color: #333
+      color: #fff
     }
 
     .conv-preview {
       font-size: 13px;
-      color: #777;
+      color: rgba(255, 255, 255, .5);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
@@ -231,11 +310,11 @@
 
     .conv-time {
       font-size: 11px;
-      color: #999
+      color: rgba(255, 255, 255, .4)
     }
 
     .conv-unread {
-      background: #1a73e8;
+      background: #4a7bc4;
       color: #fff;
       border-radius: 50%;
       padding: 1px 7px;
@@ -252,22 +331,33 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      background: #f7f9fc
+      background: #fff
     }
 
     .chat-placeholder {
       flex: 1;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      color: #999;
-      font-size: 16px
+      color: #bbb;
+      font-size: 15px;
+      gap: 16px
+    }
+
+    .chat-placeholder svg {
+      opacity: .4
+    }
+
+    .chat-placeholder span {
+      color: #ccc;
+      font-size: 14px
     }
 
     .chat-header {
       padding: 16px 24px;
       background: #fff;
-      border-bottom: 1px solid #e0e0e0;
+      border-bottom: 1px solid #e8e8e8;
       display: none;
       align-items: center;
       gap: 12px
@@ -276,19 +366,32 @@
     .chat-header .conv-avatar {
       width: 38px;
       height: 38px;
-      font-size: 14px
+      font-size: 14px;
+      background: #2d4a7a
     }
 
     .chat-header .conv-name {
-      font-size: 15px
+      font-size: 15px;
+      color: #333;
+      font-weight: 600
     }
 
     .chat-messages {
       flex: 1;
       overflow-y: auto;
-      padding: 20px 24px;
+      padding: 24px 28px;
       display: none;
-      flex-direction: column
+      flex-direction: column;
+      background: #fafafa
+    }
+
+    .chat-messages::-webkit-scrollbar {
+      width: 6px
+    }
+
+    .chat-messages::-webkit-scrollbar-thumb {
+      background: #ddd;
+      border-radius: 3px
     }
 
     .message {
@@ -298,36 +401,35 @@
       border-radius: 18px;
       font-size: 14px;
       line-height: 1.5;
-      position: relative;
       word-wrap: break-word
     }
 
     .message.sent {
-      background: #1a73e8;
+      background: #0a1e3d;
       color: #fff;
       align-self: flex-end;
       border-bottom-right-radius: 4px
     }
 
     .message.received {
-      background: #fff;
+      background: #e8edf5;
       color: #333;
       align-self: flex-start;
-      border-bottom-left-radius: 4px;
-      box-shadow: 0 1px 3px rgba(0, 0, 0, .08)
+      border-bottom-left-radius: 4px
     }
 
     .message .msg-time {
       font-size: 10px;
-      opacity: .7;
+      opacity: .6;
       margin-top: 4px;
-      text-align: right
+      text-align: right;
+      color: inherit
     }
 
     .message.received .msg-sender {
       font-size: 11px;
       font-weight: 600;
-      color: #1a73e8;
+      color: #2d4a7a;
       margin-bottom: 2px
     }
 
@@ -335,7 +437,7 @@
       display: none;
       padding: 14px 24px;
       background: #fff;
-      border-top: 1px solid #e0e0e0;
+      border-top: 1px solid #e8e8e8;
       gap: 10px;
       align-items: center
     }
@@ -346,15 +448,16 @@
       border: 1px solid #ddd;
       border-radius: 24px;
       font-size: 14px;
-      outline: none
+      outline: none;
+      transition: border-color .2s
     }
 
     .chat-input-area input:focus {
-      border-color: #1a73e8
+      border-color: #0a1e3d
     }
 
     .chat-input-area button {
-      background: #1a73e8;
+      background: #0a1e3d;
       color: #fff;
       border: none;
       border-radius: 50%;
@@ -364,11 +467,12 @@
       font-size: 18px;
       display: flex;
       align-items: center;
-      justify-content: center
+      justify-content: center;
+      transition: background .2s
     }
 
     .chat-input-area button:hover {
-      background: #1557b0
+      background: #162d52
     }
 
     .chat-input-area button:disabled {
@@ -388,13 +492,19 @@
 <body>
 
   <nav class="navbar">
-    <h1>IFRI MentorLink</h1>
-    <div style="position:relative">
+    <div class="logo">
+      <div class="logo-box"><span>M</span></div>
+      <div class="logo-text">
+        <span class="logo-ifri">IFRI</span>
+        <span class="logo-mentor">Mentor Link</span>
+      </div>
+    </div>
+    <div class="notif-wrapper">
       <button class="notif-btn" onclick="toggleNotifs()">
         Notifications <span class="notif-badge" id="notifBadge">0</span>
       </button>
       <div class="notif-dropdown" id="notifDropdown">
-        <div style="padding:14px 16px;font-weight:600;border-bottom:1px solid #eee;font-size:14px">Notifications</div>
+        <div class="notif-header">Notifications</div>
         <div id="notifList"></div>
       </div>
     </div>
@@ -411,7 +521,12 @@
 
     <main class="chat-area">
       <div class="chat-placeholder" id="chatPlaceholder">
-        Sélectionnez une conversation pour commencer
+        <svg width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="1.2"
+          stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2" />
+          <path d="M22 4L12 13L2 4" />
+        </svg>
+        <span>Sélectionnez une conversation</span>
       </div>
       <div class="chat-header" id="chatHeader">
         <div class="conv-avatar" id="chatAvatar">?</div>
@@ -568,7 +683,7 @@
         const list = document.getElementById('notifList');
         list.innerHTML = '';
         if (data.length === 0) {
-          list.innerHTML = '<div style="padding:20px;text-align:center;color:#999;font-size:13px">Aucune notification</div>';
+          list.innerHTML = '<div class="notif-empty">Aucune notification</div>';
           return;
         }
         data.forEach(n => {
@@ -577,7 +692,7 @@
           div.innerHTML = `
         <div class="notif-type ${n.type_notif}">${n.type_notif}</div>
         <div>${n.contenu}</div>
-        <div style="font-size:11px;color:#999;margin-top:4px">${n.date_creation}</div>
+        <div class="notif-date">${n.date_creation}</div>
       `;
           list.appendChild(div);
         });
