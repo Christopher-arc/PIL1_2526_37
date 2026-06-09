@@ -10,8 +10,12 @@ DB_CONFIG = {
     'password': 'Kaylhia2007',
     'database': 'ifri_mentorLink',
 }
+
+
 def get_db():
     return mysql.connector.connect(**DB_CONFIG)
+
+
 @app.route('/discussions')
 def get_discussions():
     user_id = session.get('user_id', 1)
@@ -42,6 +46,7 @@ def get_discussions():
     db.close()
     return jsonify(discussions)
 
+
 @app.route('/discussion/<int:id_discussion>')
 def get_messages(id_discussion):
     user_id = session.get('user_id', 1)
@@ -67,6 +72,7 @@ def get_messages(id_discussion):
     db.close()
     return jsonify(messages)
 
+
 @app.route('/notifications')
 def get_notifications():
     user_id = session.get('user_id', 1)
@@ -85,10 +91,12 @@ def get_notifications():
     db.close()
     return jsonify({'count': len(notifs), 'notifications': notifs})
 
+
 @socketio.on('rejoindre_discussion')
 def on_join(data):
     room = str(data['id_discussion'])
     join_room(room)
+
 
 @socketio.on('send_message')
 def handle_message(data):
@@ -115,5 +123,22 @@ def handle_message(data):
         'id_utilisateur': user_id,
         'date_envoi': __import__('datetime').datetime.now().strftime('%H:%M')
     }, room=str(id_discussion))
+     
+
+@app.route('/notifications/count')
+def get_notification_count():
+    user_id = session.get('user_id', 1)
+    db = get_db()
+    cursor = db.cursor()
+    cursor.execute("""
+        SELECT COUNT(*) FROM Notifications
+        WHERE id_utilisateur = %s AND lu = FALSE
+    """, (user_id,))
+    count = cursor.fetchone()[0]
+    cursor.close()
+    db.close()
+    return jsonify({'count': count})
+
+
 if __name__ == '__main__':
     socketio.run(app, debug=True, port=5001)
