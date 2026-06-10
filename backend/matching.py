@@ -158,7 +158,7 @@ def trouver_mentors(user_id, db):
     """, (user_id,))
     # fetchall() récupère toutes les lignes de résultat
     # On crée une liste d'id : [2, 6, 1] par exemple
-    besoins_user = [ligne[0] for ligne in cursor.fetchall()]
+    besoins_user = [ligne['id_matiere'] for ligne in cursor.fetchall()]
  
     # Si l'utilisateur n'a aucun besoin → pas de matching possible
     if not besoins_user:
@@ -169,15 +169,15 @@ def trouver_mentors(user_id, db):
     cursor.execute("""
         SELECT id_dispo FROM USER_DISPONIBILITE WHERE id_utilisateur = %s
     """, (user_id,))
-    dispos_user = [ligne[0] for ligne in cursor.fetchall()]
+    dispos_user = [ligne['id_dispo'] for ligne in cursor.fetchall()]
  
     # ── Récupérer la filière et le niveau de l'utilisateur ────
     cursor.execute("""
         SELECT filiere, niveau FROM Utilisateurs WHERE id_utilisateur = %s
     """, (user_id,))
     ligne = cursor.fetchone()   # fetchone() = une seule ligne
-    filiere_user = ligne[0]
-    niveau_user  = ligne[1]
+    filiere_user = ligne['id_filiere']
+    niveau_user  = ligne['id_niveau']
  
     # ── ÉTAPE 2 : Trouver les mentors potentiels ───────────────
     # Un mentor potentiel = quelqu'un qui maîtrise au moins 1 besoin de U
@@ -202,7 +202,7 @@ def trouver_mentors(user_id, db):
  
     for mentor in mentors_potentiels:
         # On décompresse chaque ligne de résultat
-        id_mentor, nom, prenom, photo, filiere_mentor, niveau_mentor = mentor
+        mentor['id_utilisateur'],mentor ['nom'],mentor['prenom'],mentor['photo'],mentor ['filiere'],mentor ['niveau'] = mentor
  
         # Matières maîtrisées par ce mentor
         cursor.execute("""

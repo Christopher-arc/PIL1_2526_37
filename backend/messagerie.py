@@ -105,3 +105,90 @@ def discussion(discussion_id):
         messages=messages,
         active='messagerie'
     )
+@messagerie_bp.route('/nouveau_message', methods=['POST'])
+@login_required
+def nouveau_message():
+    """Envoyer un message dans une discussion (fallback sans SocketIO)"""
+    user_id = session['id']
+    discussion_id = request.form.get('discussion_id')
+    contenu = request.form.get('contenu', '').strip()
+
+    if not discussion_id or not contenu:
+        flash("Message vide ou discussion invalide.", 'danger')
+        return redirect(url_for('messagerie.messagerie'))
+
+    cur = mysql.connection.cursor()
+    cur.execute(
+        "SELECT * FROM PARTICIPATION WHERE id_discussion = %s AND id_utilisateur = %s",
+        (discussion_id, user_id)
+    )
+    if not cur.fetchone():
+        cur.close()
+        flash("Accès refusé.", 'danger')
+        return redirect(url_for('messagerie.messagerie'))
+
+    cur.execute(
+        "INSERT INTO Messages (id_discussion, id_utilisateur, contenu) VALUES (%s, %s, %s)",
+        (discussion_id, user_id, contenu)
+    )
+    mysql.connection.commit()
+    cur.close()
+    return redirect(url_for('messagerie.discussion', discussion_id=discussion_id))
+
+
+def register_socketio_events(socketio):
+    """
+    Enregistre les événements Socket.IO pour la messagerie temps réel.
+    Appelée depuis App_final.py après création du socketio.
+    """
+
+    @socketio.on('rejoindre_discussion')
+    def on_rejoindre(data):
+        from flask_socketio import join_room
+        discussion_id = data.get('discussion_id')
+        if discussion_id:
+            join_room(str(discussion_id))
+
+    @socketio.on('envoyer_message')
+    def on_message(data):
+        from flask_socketio import emit
+        from datetime import datetime
+
+        user_id = session.get('id')
+        discussion_id = data.get('discussion_id')
+        contenu = data.get('contenu', '').strip()
+
+        if not user_id or not discussion_id or not contenu:
+            return
+
+        cur = mysql.connection.cursor()
+        cur.execute(
+            "SELECT * FROM PARTICIPATION WHERE id_discussion = %s AND id_utilisateur = %s",
+            (discussion_id, user_id)
+        )
+        if not cur.fetchone():
+            cur.close()
+            return
+
+        cur.execute(
+            "INSERT INTO Messages (id_discussion, id_utilisateur, contenu) VALUES (%s, %s, %s)",
+            (discussion_id, user_id, contenu)
+        )
+        mysql.connection.commit()
+        id_message = cur.lastrowid
+
+        cur.execute(
+            "SELECT nom, prenom FROM Utilisateurs WHERE id_utilisateur = %s",
+            (user_id,)
+        )
+        u = cur.fetchone()
+        cur.close()
+
+        emit('nouveau_message', {
+            'id_message': id_message,
+            'id_utilisateur': user_id,
+            'nom': u['nom'] if u else '',
+            'prenom': u['prenom'] if u else '',
+            'contenu': contenu,
+            'date_envoi': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+        }, room=str(discussion_id))

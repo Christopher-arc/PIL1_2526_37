@@ -51,7 +51,7 @@ def liste():
             FROM Annonces a
             JOIN Utilisateurs u ON a.id_utilisateur = u.id_utilisateur
             LEFT JOIN ANNONCE_MATIERE am ON a.id_annonce = am.id_annonce
-            LEFT JOIN `Matières` m ON am.id_matiere = m.id_matiere
+            LEFT JOIN `Matieres` m ON am.id_matiere = m.id_matiere
             LEFT JOIN ANNONCE_DISPONIBILITE ad ON a.id_annonce = ad.id_annonce
             LEFT JOIN `Disponibilites` d ON ad.id_dispo = d.id_dispo
             WHERE a.statut = 'actif'

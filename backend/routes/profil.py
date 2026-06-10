@@ -81,7 +81,7 @@ def profil():
     if photo_nom:
         cur.execute(
             "UPDATE Utilisateurs SET nom=%s, prenom=%s, telephone=%s, filiere=%s, niveau=%s, Bio=%s, photo=%s WHERE id_utilisateur=%s",
-            (nom, prenom, telephone, filiere, niveau, Bio, photo_nom, session['id'])
+            (nom, prenom, telephone, filiere, niveau, bio, photo_nom, session['id'])
         )
     else:
         cur.execute(
