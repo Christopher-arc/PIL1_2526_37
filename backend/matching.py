@@ -133,3 +133,139 @@ def calculer_score_filiere(filiere_user, niveau_user, filiere_mentor, niveau_men
     # On s'assure que le score ne dépasse pas 10
     return min(score, 10)
  
+ # ────────────────────────────────────────────────────────────
+#  FONCTION PRINCIPALE : trouver les meilleurs mentors
+# ────────────────────────────────────────────────────────────
+#
+#  C'est cette fonction que Flask appellera dans la route /matching
+#
+#  PARAMÈTRES :
+#  user_id : l'identifiant de l'utilisateur connecté
+#  db      : l'objet de connexion MySQL fourni par Flask (flask-mysqldb)
+#
+#  RETOURNE :
+#  Une liste de dictionnaires, triée par score décroissant
+#  Ex : [{'nom': 'Paul', 'score_global': 8.2, ...}, ...]
+ 
+def trouver_mentors(user_id, db):
+ 
+    # cursor = outil pour envoyer des requêtes SQL à MySQL
+    cursor = db.connection.cursor()
+ 
+    # ── ÉTAPE 1 : Récupérer les besoins de l'utilisateur ──────
+    cursor.execute("""
+        SELECT id_matiere FROM BESOIN WHERE id_utilisateur = %s
+    """, (user_id,))
+    # fetchall() récupère toutes les lignes de résultat
+    # On crée une liste d'id : [2, 6, 1] par exemple
+    besoins_user = [ligne[0] for ligne in cursor.fetchall()]
+ 
+    # Si l'utilisateur n'a aucun besoin → pas de matching possible
+    if not besoins_user:
+        cursor.close()
+        return []
+
+    # ── Récupérer les disponibilités de l'utilisateur ─────────
+    cursor.execute("""
+        SELECT id_dispo FROM USER_DISPONIBILITE WHERE id_utilisateur = %s
+    """, (user_id,))
+    dispos_user = [ligne[0] for ligne in cursor.fetchall()]
+ 
+    # ── Récupérer la filière et le niveau de l'utilisateur ────
+    cursor.execute("""
+        SELECT filiere, niveau FROM Utilisateurs WHERE id_utilisateur = %s
+    """, (user_id,))
+    ligne = cursor.fetchone()   # fetchone() = une seule ligne
+    filiere_user = ligne[0]
+    niveau_user  = ligne[1]
+ 
+    # ── ÉTAPE 2 : Trouver les mentors potentiels ───────────────
+    # Un mentor potentiel = quelqu'un qui maîtrise au moins 1 besoin de U
+    # On utilise IN (...) pour chercher plusieurs valeurs à la fois
+    # '%s,' * n génère les bons placeholders : '%s,%s,%s'
+    placeholders = ','.join(['%s'] * len(besoins_user))
+ 
+    cursor.execute(f"""
+        SELECT DISTINCT u.id_utilisateur, u.nom, u.prenom,
+                        u.photo, u.filiere, u.niveau
+        FROM Utilisateurs u
+        JOIN MAITRISE m ON u.id_utilisateur = m.id_utilisateur
+        WHERE m.id_matiere IN ({placeholders})
+        AND u.id_utilisateur != %s
+    """, (*besoins_user, user_id))
+    # *besoins_user "décompresse" la liste : [1,2,3] → 1, 2, 3
+ 
+    mentors_potentiels = cursor.fetchall()
+ 
+    # ── ÉTAPE 3 : Calculer le score pour chaque mentor ─────────
+    resultats = []   # liste vide pour stocker les résultats
+ 
+    for mentor in mentors_potentiels:
+        # On décompresse chaque ligne de résultat
+        id_mentor, nom, prenom, photo, filiere_mentor, niveau_mentor = mentor
+ 
+        # Matières maîtrisées par ce mentor
+        cursor.execute("""
+            SELECT id_matiere FROM MAITRISE WHERE id_utilisateur = %s
+        """, (id_mentor,))
+        matieres_mentor = [ligne[0] for ligne in cursor.fetchall()]
+ 
+        # Disponibilités de ce mentor
+        cursor.execute("""
+            SELECT id_dispo FROM USER_DISPONIBILITE WHERE id_utilisateur = %s
+        """, (id_mentor,))
+        dispos_mentor = [ligne[0] for ligne in cursor.fetchall()]
+ 
+        # Calcul des 3 scores
+        s_matieres = calculer_score_matieres(besoins_user, matieres_mentor)
+        s_dispos   = calculer_score_dispos(dispos_user, dispos_mentor)
+        s_filiere  = calculer_score_filiere(
+                         filiere_user, niveau_user,
+                         filiere_mentor, niveau_mentor)
+ 
+        # Score global
+        s_global = calculer_score_global(s_matieres, s_dispos, s_filiere)
+ 
+        # On n'ajoute que les mentors avec un score > 0
+        if s_global > 0:
+            # On crée un dictionnaire pour ce mentor
+            resultats.append({
+                'id_mentor'         : id_mentor,
+                'nom'               : nom,
+                'prenom'            : prenom,
+                'photo'             : photo,
+                'filiere'           : filiere_mentor,
+                'niveau'            : niveau_mentor,
+                'score_matieres'    : s_matieres,
+                'score_dispos'      : s_dispos,
+                'score_filiere'     : s_filiere,
+                'score_global'      : s_global
+            })
+ 
+    # ── ÉTAPE 4 : Trier par score décroissant ──────────────────
+    # key=lambda x: x['score_global'] → trier selon cette valeur
+    # reverse=True → du plus grand au plus petit
+    resultats.sort(key=lambda x: x['score_global'], reverse=True)
+ 
+    cursor.close()
+    return resultats   # liste de dicts triée par score
+ 
+ 
+# ────────────────────────────────────────────────────────────
+#  COMMENT APPELER CET ALGORITHME DANS FLASK (dans app.py)
+# ────────────────────────────────────────────────────────────
+#
+#  from matching import trouver_mentors
+#
+#  @app.route('/matching')
+#  def matching():
+#      user_id = session['id_utilisateur']   # user connecté
+#      mentors = trouver_mentors(user_id, mysql)
+#      return render_template('matching.html', mentors=mentors)
+#
+#  Dans matching.html (template Jinja2) :
+#  {% for m in mentors %}
+#    <p>{{ m['nom'] }} — Score : {{ m['score_global'] }}/10</p>
+#  {% endfor %}
+# ────────────────────────────────────────────────────────────
+ 
