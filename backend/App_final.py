@@ -17,11 +17,10 @@ from db import init_db, mysql
 # ============================================================================
 # 1. INITIALISATION FLASK + SOCKETIO
 # ============================================================================
-
 app = Flask(
     __name__,
-    template_folder=os.path.join(os.path.dirname(__file__), '..', 'frontend', 'templates'),
-    static_folder=os.path.join(os.path.dirname(__file__), '..', 'frontend', 'statics')
+    template_folder=os.path.join(os.path.dirname(__file__), '..', '..', 'frontend', 'templates'),
+    static_folder=os.path.join(os.path.dirname(__file__), '..', '..', 'frontend', 'statics')
 )
 
 app.secret_key = 'mentorlink_secret_2026'
@@ -47,7 +46,7 @@ from routes.auth     import auth_bp
 from routes.profil   import profil_bp
 from routes.annonces import annonces_bp
 from routes.messagerie import messagerie_bp, register_socketio_events
-
+#from routes.messagerie import messagerie_bp, register_socketio_events
 app.register_blueprint(auth_bp)
 app.register_blueprint(profil_bp)
 app.register_blueprint(annonces_bp)
@@ -353,7 +352,29 @@ def internal_error(error):
 # ============================================================================
 # 10. DÉMARRAGE
 # ============================================================================
+@app.route('/')
+def home():
+    return render_template('Login1.html')
 
+@app.route('/dashboard')
+def dashboard():
+    return render_template('dashboard.html')
+
+@app.route('/matching')
+def matching():
+    return render_template('matching.html')
+
+@app.route('/explorer')
+def explorer():
+    return render_template('explorer.html')
+
+@app.route('/messagerie')
+def messagerie():
+    return render_template('messagerie.html')
+
+@app.route('/profil')
+def profil():
+    return render_template('profil.html')
 if __name__ == '__main__':
     # Avec SocketIO pour support temps réel
     socketio.run(app, debug=True, port=8080, host='0.0.0.0', allow_unsafe_werkzeug=True)

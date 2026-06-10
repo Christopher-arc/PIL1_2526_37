@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="page-titre">Explorer</h2>
+<p class="page-sub">Parcourez les profils et les offres de mentorat disponibles.</p>
+
+<input class="barre-recherche mb-4" type="text" id="searchInput" placeholder="Rechercher par nom, filière, compétence..." onkeyup="filterContent()">
+
+<div class="tabs-explorer">
+  <div class="tab-exp actif" onclick="switchTab('profils')">Profils</div>
+  <div class="tab-exp" onclick="switchTab('offres')">Offres & Demandes</div>
+</div>
+
+<div id="explorerContent"></div>
+
+<script>
+  let currentTab = 'profils';
+  let searchText = '';
+  let currentFilter = 'all';
+  
+  const profils = {{ profils|tojson }};
+  const annonces = {{ annonces|tojson }};
+  
+  function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-exp').forEach(t => t.classList.remove('actif'));
+    if(tab === 'profils') document.querySelectorAll('.tab-exp')[0].classList.add('actif');
+    else document.querySelectorAll('.tab-exp')[1].classList.add('actif');
+    displayContent();
+  }
+  
+  function filterContent() {
+    searchText = document.getElementById('searchInput').value.toLowerCase();
+    displayContent();
+  }
+  
+  function filterAnnonces(type) {
+    currentFilter = type;
+    displayContent();
+  }
+  
+  function getRoleClass(role) {
+    if(role === 'Mentor') return 'bv';
+    if(role === 'Mentoré') return 'bvio';
+    return 'bb';
+  }
+  
+  function displayContent() {
+    const container = document.getElementById('explorerContent');
+    if(currentTab === 'profils') {
+      let filtered = profils.filter(p => !searchText || p.nom.toLowerCase().includes(searchText) || p.filiere.toLowerCase().includes(searchText) || p.competences.some(c => c.toLowerCase().includes(searchText)));
+      container.innerHTML = `
+        <div class="d-flex gap-3 align-items-center mb-3 flex-wrap">
+          <select class="form-select" style="width:155px;font-size:0.8rem" id="roleFilter" onchange="displayContent()">
+            <option value="all">Tous les rôles</option><option value="Mentor">Mentors</option><option value="Mentoré">Mentorés</option><option value="Mentor & Mentoré">Les deux</option>
+          </select>
+          <select class="form-select" style="width:175px;font-size:0.8rem" id="filiereFilter" onchange="displayContent()">
+            <option value="all">Toutes les filières</option><option value="RSI">RSI</option><option value="IM">IM</option><option value="GL">GL</option><option value="GLG">GLG</option><option value="IA">IA</option><option value="Cybersécurité">Cybersécurité</option>
+          </select>
+          <span class="small text-secondary ms-auto">${filtered.length} profils</span>
+        </div>
+        <div class="row g-3">
+          ${filtered.filter(p => {
+            let role = document.getElementById('roleFilter')?.value || 'all';
+            let filiere = document.getElementById('filiereFilter')?.value || 'all';
+            return (role === 'all' || p.role === role) && (filiere === 'all' || p.filiere === filiere);
+          }).map(p => `
+            <div class="col-6">
+              <div class="carte-profil p-3">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                  <div class="avatar" style="background:${p.couleur};width:40px;height:40px">${p.initiales}</div>
+                  <div class="flex-grow-1"><div class="fw-semibold text-dark">${p.nom}</div><div class="small text-secondary">${p.filiere}</div></div>
+                  <span class="${getRoleClass(p.role)}">${p.role}</span>
+                </div>
+                <div class="small text-secondary mb-2">${p.bio.substring(0,100)}...</div>
+                <div>${p.competences.map(c => `<span class="pill">${c}</span>`).join('')}</div>
+                <div class="small text-secondary mt-2">★ ${p.note} · ${p.sessions} sessions</div>
+                <div class="d-flex gap-2 mt-2"><button class="btn-outline-sm">Profil</button><button class="btn-navy">Contacter</button></div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    } else {
+      let filtered = annonces.filter(a => {
+        let matchSearch = !searchText || a.titre.toLowerCase().includes(searchText) || a.auteur.toLowerCase().includes(searchText) || a.filiere.toLowerCase().includes(searchText) || a.competences.some(c => c.toLowerCase().includes(searchText));
+        let matchType = currentFilter === 'all' || a.type === currentFilter;
+        return matchSearch && matchType;
+      });
+      container.innerHTML = `
+        <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
+          <button class="filter-btn ${currentFilter === 'all' ? 'actif' : ''}" onclick="filterAnnonces('all')">Tout</button>
+          <button class="filter-btn ${currentFilter === 'offre' ? 'actif' : ''}" onclick="filterAnnonces('offre')">Offres</button>
+          <button class="filter-btn ${currentFilter === 'demande' ? 'actif' : ''}" onclick="filterAnnonces('demande')">Demandes</button>
+          <span class="small text-secondary ms-3">${filtered.length} annonces</span>
+        </div>
+        ${filtered.map(a => `
+          <div class="carte-offre p-3 mb-3">
+            <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
+              <div class="avatar" style="background:${a.couleur};width:40px;height:40px">${a.initiales}</div>
+              <div><div class="fw-semibold text-dark">${a.titre}</div><div class="small text-secondary">par ${a.auteur} - ${a.filiere}</div></div>
+              <span class="ms-auto ${a.type === 'offre' ? 'bo' : 'bd'}">${a.type === 'offre' ? 'Offre de mentorat' : 'Demande de mentorat'}</span>
+            </div>
+            <div class="small text-secondary mb-2">${a.description}</div>
+            <div>${a.competences.map(c => `<span class="pill">${c}</span>`).join('')}</div>
+            <div class="small text-secondary mt-2">${a.date}</div>
+            <div class="d-flex gap-2 mt-2"><button class="btn-outline-sm">Voir profil</button><button class="btn-navy">Contacter</button></div>
+          </div>
+        `).join('')}
+      `;
+    }
+  }
+  
+  displayContent();
+</script>
+{% endblock %}
