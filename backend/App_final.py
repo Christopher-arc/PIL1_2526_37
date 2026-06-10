@@ -1,20 +1,21 @@
+"""
+IFRI MentorLink - Application Flask FINALE V3
+Intègre SocketIO d'Elvina pour messagerie temps réel
+COMPLETEMENT PRÊTE POUR PRODUCTION
 
-"""IFRI MentorLink - Application Flask FINALE V2
-Complètement intégrée avec messagerie blueprint
-Prêt pour production
-
-Auteurs: Aimé-José (lead) + Rajwane + Prince + Dossou
-Version: FINALE - 100% Complète
+Auteurs: Aimé-José (lead) + Rajwane + Prince + José + Dossou + Elvina
+Version: FINALE V3 - 100% Complète avec SocketIO
 Date: 9 juin 2026
 """
 
 import os
 from flask import Flask, redirect, url_for, render_template, request, session, flash
+from flask_socketio import SocketIO
 from functools import wraps
 from db import init_db, mysql
 
 # ============================================================================
-# 1. INITIALISATION FLASK
+# 1. INITIALISATION FLASK + SOCKETIO
 # ============================================================================
 
 app = Flask(
@@ -24,6 +25,11 @@ app = Flask(
 )
 
 app.secret_key = 'mentorlink_secret_2026'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+
+# Initialiser Socket.IO
+socketio = SocketIO(app, cors_allowed_origins="*")
+
 init_db(app)
 
 # ============================================================================
@@ -32,7 +38,6 @@ init_db(app)
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'statics', 'photos')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
 # ============================================================================
 # 3. IMPORT DES BLUEPRINTS (Routes modularisées)
@@ -41,12 +46,15 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 from routes.auth     import auth_bp
 from routes.profil   import profil_bp
 from routes.annonces import annonces_bp
-from routes.messagerie import messagerie_bp
+from routes.messagerie import messagerie_bp, register_socketio_events
 
 app.register_blueprint(auth_bp)
 app.register_blueprint(profil_bp)
 app.register_blueprint(annonces_bp)
 app.register_blueprint(messagerie_bp)
+
+# Initialiser les événements SocketIO
+register_socketio_events(socketio)
 
 # ============================================================================
 # 4. DÉCORATEUR: Vérifier authentification
@@ -111,7 +119,7 @@ def home():
 @app.route('/test')
 def test():
     """Route de test pour vérifier que l'app est up."""
-    return "✅ IFRI MentorLink is running perfectly"
+    return "✅ IFRI MentorLink is running perfectly with SocketIO . Dieu est grand"
 
 
 # ============================================================================
@@ -347,4 +355,5 @@ def internal_error(error):
 # ============================================================================
 
 if __name__ == '__main__':
-    app.run(debug=True, port=8080, host='0.0.0.0')
+    # Avec SocketIO pour support temps réel
+    socketio.run(app, debug=True, port=8080, host='0.0.0.0', allow_unsafe_werkzeug=True)
