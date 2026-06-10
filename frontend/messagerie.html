@@ -486,6 +486,79 @@
       padding: 20px;
       font-size: 13px
     }
+
+    .back-btn {
+      display: none;
+      background: none;
+      border: none;
+      font-size: 22px;
+      color: #333;
+      cursor: pointer;
+      padding: 0 4px 0 0;
+      line-height: 1
+    }
+
+    @media (max-width: 767px) {
+      .sidebar {
+        width: 100%;
+        min-width: 0;
+        display: flex
+      }
+      .sidebar.hide-mobile {
+        display: none
+      }
+      .chat-area {
+        width: 100%;
+        display: none
+      }
+      .chat-area.show-mobile {
+        display: flex
+      }
+      .chat-placeholder.show-mobile {
+        display: flex
+      }
+      .back-btn {
+        display: inline-block
+      }
+      .notif-dropdown {
+        width: calc(100vw - 32px);
+        right: 16px;
+        top: 46px
+      }
+      .navbar {
+        padding: 10px 16px
+      }
+      .logo-box {
+        width: 34px;
+        height: 34px
+      }
+      .logo-box span {
+        font-size: 18px
+      }
+      .logo-ifri {
+        font-size: 14px
+      }
+      .logo-mentor {
+        font-size: 12px
+      }
+      .notif-btn {
+        padding: 6px 12px;
+        font-size: 13px
+      }
+      .message {
+        max-width: 85%
+      }
+      .chat-messages {
+        padding: 16px
+      }
+    }
+
+    @media (min-width: 768px) and (max-width: 1024px) {
+      .sidebar {
+        width: 280px;
+        min-width: 280px
+      }
+    }
   </style>
 </head>
 
@@ -529,6 +602,7 @@
         <span>Sélectionnez une conversation</span>
       </div>
       <div class="chat-header" id="chatHeader">
+        <button class="back-btn" onclick="backToConversations()">←</button>
         <div class="conv-avatar" id="chatAvatar">?</div>
         <div class="conv-name" id="chatName">Interlocuteur</div>
       </div>
@@ -549,7 +623,7 @@
     socket.on('connect', () => console.log('SocketIO connecté'));
 
     socket.on('receive_message', (msg) => {
-      if (currentDiscussionId == msg.id_discussion || (currentDiscussionId && !msg.id_discussion)) {
+      if (currentDiscussionId == msg.id_discussion) {
         appendMessage(msg);
         scrollChat();
       }
@@ -592,6 +666,21 @@
       }
     }
 
+    function isMobile() {
+      return window.innerWidth <= 767;
+    }
+
+    function backToConversations() {
+      document.querySelector('.sidebar').classList.remove('hide-mobile');
+      document.querySelector('.chat-area').classList.remove('show-mobile');
+      document.getElementById('chatPlaceholder').style.display = 'flex';
+      document.getElementById('chatHeader').style.display = 'none';
+      document.getElementById('chatMessages').style.display = 'none';
+      document.getElementById('chatInputArea').style.display = 'none';
+      currentDiscussionId = null;
+      loadConversations();
+    }
+
     async function openDiscussion(id) {
       currentDiscussionId = id;
       document.getElementById('chatPlaceholder').style.display = 'none';
@@ -600,8 +689,12 @@
       document.getElementById('chatInputArea').style.display = 'flex';
       document.getElementById('chatMessages').innerHTML = '<div class="loading">Chargement...</div>';
       document.getElementById('sendBtn').disabled = true;
+      if (isMobile()) {
+        document.querySelector('.sidebar').classList.add('hide-mobile');
+        document.querySelector('.chat-area').classList.add('show-mobile');
+      }
 
-      socket.emit('join', { discussion_id: id });
+      socket.emit('rejoindre_discussion', { id_discussion: id });
 
       try {
         const [convRes, msgRes] = await Promise.all([
@@ -682,11 +775,12 @@
         const data = await res.json();
         const list = document.getElementById('notifList');
         list.innerHTML = '';
-        if (data.length === 0) {
+        const notifs = data.notifications || [];
+        if (notifs.length === 0) {
           list.innerHTML = '<div class="notif-empty">Aucune notification</div>';
           return;
         }
-        data.forEach(n => {
+        notifs.forEach(n => {
           const div = document.createElement('div');
           div.className = 'notif-item';
           div.innerHTML = `

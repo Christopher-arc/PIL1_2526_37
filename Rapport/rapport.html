@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rapport - IFRI MentorLink</title>
+  <link rel="stylesheet" href="rapport.css">
+</head>
+
+<body>
+  <div class="container">
+
+    <h1>IFRI MentorLink — Rapport de Projet</h1>
+    <p class="subtitle">Plateforme de mentorat entre étudiants — PIL1 2526_37</p>
+
+    <!-- Constitution du Groupe -->
+    <h2>1. Groupe et Membres</h2>
+    <p><strong>Nom du projet :</strong> IFRI MentorLink</p>
+    <p><strong>Groupe :</strong> PIL1_2526_37</p>
+
+    <div class="member-grid">
+      <div class="member-card">
+        <h4>Elvina ADJATI</h4>
+        <div class="filiere">Informatique — SEIOT</div>
+        <div class="role"><strong>Rôle :</strong> Développeuse Full Stack et Rapporteuse</div>
+        <div class="role mt-med">
+          <strong>Contribution :</strong>
+          <ul>
+            <li>API REST de la messagerie (GET /discussions, GET /discussion/&lt;id&gt;, marquage lu)</li>
+            <li>Messagerie temps réel avec Flask-SocketIO (send_message / receive_message)</li>
+            <li>API des notifications (GET /notifications, GET /notifications/count)</li>
+            <li>Interface HTML de la messagerie avec Socket.IO client</li>
+            <li>Configuration du projet (.env, .gitignore, requirements.txt, python-dotenv)</li>
+            <li>Création du rapport HTML du projet</li>
+          </ul>
+        </div>
+      </div>
+      <div class="member-card">
+        <h4>CRECEL Aimé-José</h4>
+        <div class="filiere">Informatique — IA</div>
+        <div class="role"><strong>Rôle :</strong> Coordinateur & Développeur Backend</div>
+        <div class="role mt-med">
+          <strong>Contribution :</strong>
+          <ul>
+            <li>Coordination générale de l'équipe, planification des livrables et architecture logique</li>
+            <li>Conception et implémentation complète de l'algorithme central de recommandation dans matching.py</li>
+            <li>Développement de fonctions d'intersection d'ensembles (set) pour calculer trois scores distincts :
+              compatibilité des matières, synchronisation des disponibilités et affinité des filières/niveaux</li>
+            <li>Optimisation de la fonction pour traiter les structures de données en dictionnaires issues de la base de
+              données</li>
+          </ul>
+        </div>
+      </div>
+      <div class="member-card">
+        <h4>TCHIMON Olouwatobi Prince Kévine</h4>
+        <div class="filiere">Informatique — IM</div>
+        <div class="role"><strong>Rôle :</strong> Développeur Frontend</div>
+        <div class="role mt-med">
+          <strong>Contribution :</strong>
+          <ul>
+            <li>Traduction des maquettes fonctionnelles Figma en pages web dynamiques</li>
+            <li>Conception de l'architecture des templates à l'aide du moteur de rendu Jinja2</li>
+            <li>Création du fichier d'héritage global base.html comprenant la barre de navigation latérale fixe et la
+              structure responsive</li>
+            <li>Uniformisation de l'identité visuelle de la plateforme sur l'ensemble des modules (Dashboard, Explorer,
+              Profil) via Bootstrap</li>
+          </ul>
+        </div>
+      </div>
+      <div class="member-card">
+        <h4>HOUNSOU Dossou Grace Gbètognon</h4>
+        <div class="filiere">Informatique — SI</div>
+        <div class="role"><strong>Rôle :</strong> Développeur Backend</div>
+        <div class="role mt-med">
+          <strong>Contribution :</strong>
+          <ul>
+            <li>Développement de la logique d'authentification dans auth.py</li>
+            <li>Implémentation du hachage sécurisé des mots de passe à l'inscription et de leur vérification à la
+              connexion via werkzeug.security</li>
+            <li>Création du décorateur personnalisé login_required pour restreindre l'accès aux pages sensibles
+              (Dashboard, Profil, Messagerie) aux seuls utilisateurs connectés</li>
+            <li>Gestion des sessions Flask pour le maintien de la connexion utilisateur</li>
+          </ul>
+        </div>
+      </div>
+      <div class="member-card">
+        <h4>KINTONOU Sonagnon Mathieu</h4>
+        <div class="filiere">Informatique — SI</div>
+        <div class="role"><strong>Rôle :</strong> Administrateur Base de Données</div>
+        <div class="role mt-med">
+          <strong>Contribution :</strong>
+          <ul>
+            <li>Conception du schéma SQL de la base de données IFRI_MentorLink</li>
+            <li>Écriture du fichier central de configuration db.py utilisant flask_mysqldb</li>
+            <li>Configuration de l'application Flask pour initialiser la connexion (port 3307, mode DictCursor)</li>
+            <li>Réalisation des scripts de validation (test_db.py) pour tester l'efficacité des requêtes</li>
+          </ul>
+        </div>
+      </div>
+      <div class="member-card">
+        <h4>EYITAYO ADELEKE Rajwane</h4>
+        <div class="filiere">Informatique — Génie Logiciel</div>
+        <div class="role"><strong>Rôle :</strong> Développeur Backend</div>
+        <div class="role mt-med">
+          <strong>Contribution :</strong>
+          <ul>
+            <li>Création du point d'entrée de l'application (app.py)</li>
+            <li>Mise en place d'une architecture modulaire basée sur les Blueprints de Flask pour séparer les
+              fonctionnalités (authentification, profils, annonces)</li>
+            <li>Gestion des cycles de requêtes et configuration des dossiers de templates et fichiers statiques</li>
+            <li>Connexion à la base de données MySQL avec flask-mysqldb</li>
+            <li>Routes d'inscription avec hashage du mot de passe (Werkzeug) et de connexion avec session Flask</li>
+            <li>Route profil (affichage et modification)</li>
+            <li>Route annonces avec filtres (matière, format) et création/réponse aux annonces</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <h3>Remarques sur le travail en groupe</h3>
+    <ul>
+      <li><strong>Organisation du travail :</strong> Partielle ; collaboration sur la structure du projet et les
+        fonctionnalités, avec des responsabilités individuelles (backend, frontend, base de données, rapport).</li>
+      <li><strong>Communication :</strong> Présente mais irrégulière, principalement via WhatsApp et GitHub.</li>
+      <li><strong>Répartition des tâches :</strong> Chaque membre a contribué à au moins une fonctionnalité clé, avec
+        une coordination qui aurait pu être plus régulière.</li>
+      <li><strong>Problèmes rencontrés :</strong> Conflits sur certaines parties du projet, difficultés de communication
+        et de coordination, absence de retours réguliers et manque d'organisation interne.</li>
+      <li><strong>Démarche de résolution :</strong> Résolution des conflits par choix final des parties concernées,
+        tentatives de relance via WhatsApp avec un succès limité.</li>
+    </ul>
+    <p>Le travail a été organisé de manière partielle, avec une collaboration sur la structure générale du projet et une
+      répartition des responsabilités individuelles (backend, frontend, base de données, rapport). La communication,
+      assurée principalement via WhatsApp et GitHub, était présente mais irrégulière, ce qui a engendré un manque de
+      dynamisme au sein du groupe, des retours insuffisants et une coordination perfectible. L'expérience de travail en
+      équipe, bien qu'imparfaite sur le plan organisationnel, reste satisfaisante dans l'ensemble et constitue un
+      apprentissage précieux pour de futurs projets collaboratifs.
+      <!-- Conception -->
+    <h2>2. Conception du Projet</h2>
+
+
+    <h3>2.1 Structure du Projet</h3>
+    <div class="schema">
+      <pre>
+PIL1_2526_37/
+├── backend/
+│   ├── messagerie.py       # API Flask + WebSocket (SocketIO)
+│   ├── requirements.txt    # Dépendances Python
+│   └── .env.example        # Modèle de configuration
+├── frontend/
+│   └── messagerie.html     # Interface utilisateur de la messagerie
+├── Database/
+│   └── Files.sql           # Schéma SQL + données de test
+├── Rapport/
+│   └── rapport.html        # Ce rapport
+├── .gitignore
+└── .env.example
+</pre>
+    </div>
+
+    <p>Le projet suit une architecture <strong>client-serveur</strong> :</p>
+    <ul>
+      <li><strong>Backend (Flask)</strong> : API REST pour les discussions, messages et notifications. Communication
+        temps réel via Flask-SocketIO.</li>
+      <li><strong>Frontend (HTML/JS)</strong> : Interface utilisateur avec Socket.IO client pour la messagerie en
+        direct.</li>
+      <li><strong>Base de données (MySQL)</strong> : Stockage des utilisateurs, annonces, messages, notifications et
+        matchings.</li>
+    </ul>
+
+    <h3>2.2 Base de Données</h3>
+    <p>La base <strong>IFRI_MentorLink</strong> est constituée de 15 tables :</p>
+
+    <table>
+      <tr>
+        <th>Table</th>
+        <th>Rôle</th>
+      </tr>
+      <tr>
+        <td>Utilisateurs</td>
+        <td>Profils des étudiants (nom, email, filière, niveau, bio)</td>
+      </tr>
+      <tr>
+        <td>Matières</td>
+        <td>Liste des disciplines (Algorithmique, Python, BDD, etc.)</td>
+      </tr>
+      <tr>
+        <td>Annonces</td>
+        <td>Offres et demandes de mentorat</td>
+      </tr>
+      <tr>
+        <td>Disponibilités</td>
+        <td>Créneaux horaires (jour, heure début/fin)</td>
+      </tr>
+      <tr>
+        <td>Discussions</td>
+        <td>Sessions de conversation entre utilisateurs</td>
+      </tr>
+      <tr>
+        <td>Messages</td>
+        <td>Messages textes avec statut lu/non lu</td>
+      </tr>
+      <tr>
+        <td>Notifications</td>
+        <td>Alertes (message, match, réponse)</td>
+      </tr>
+      <tr>
+        <td>Réponses</td>
+        <td>Réponses aux annonces avec statut</td>
+      </tr>
+      <tr>
+        <td>Matching</td>
+        <td>Paires mentor/mentoré avec score</td>
+      </tr>
+      <tr>
+        <td>MAITRISE</td>
+        <td>Liaison utilisateur → matière maîtrisée</td>
+      </tr>
+      <tr>
+        <td>BESOIN</td>
+        <td>Liaison utilisateur → matière souhaitée</td>
+      </tr>
+      <tr>
+        <td>USER_DISPONIBILITE</td>
+        <td>Liaison utilisateur → créneaux</td>
+      </tr>
+      <tr>
+        <td>ANNONCE_MATIERE</td>
+        <td>Liaison annonce → matière</td>
+      </tr>
+      <tr>
+        <td>ANNONCE_DISPONIBILITE</td>
+        <td>Liaison annonce → créneau</td>
+      </tr>
+      <tr>
+        <td>PARTICIPATION</td>
+        <td>Liaison utilisateur → discussion</td>
+      </tr>
+    </table>
+
+    <p>Le schéma inclut des <strong>contraintes d'unicité</strong> pour éviter les doublons (réponses multiples à une
+      annonce, paires mentor/mentoré en double) et des <strong>données de test</strong> (6 utilisateurs, 2 discussions,
+      messages, notifications) pour valider le fonctionnement.</p>
+
+    <!-- Déploiement -->
+    <h2>3. Instructions de Déploiement</h2>
+
+    <h3>Prérequis</h3>
+    <ul>
+      <li>Python 3.10+</li>
+      <li>MySQL 8.0+</li>
+      <li>Navigateur web moderne</li>
+    </ul>
+
+    <h3>Étapes d'installation</h3>
+
+    <div class="step">
+      <strong>1. Cloner le dépôt</strong><br>
+      <div class="code">git clone &lt;https://github.com/Christopher-arc/PIL1_2526_37.git&gt; PIL1_2526_37<br>cd
+        PIL1_2526_37</div>
+    </div>
+
+    <div class="step">
+      <strong>2. Créer la base de données</strong><br>
+      <div class="code">mysql -u root -p &lt; Database/Files.sql</div>
+    </div>
+
+    <div class="step">
+      <strong>3. Créer l'environnement virtuel et installer les dépendances</strong><br>
+      <div class="code">python -m venv .venv<br>
+        .\.venv\Scripts\Activate.ps1 # Windows<br>
+        pip install -r backend/requirements.txt</div>
+    </div>
+
+    <div class="step">
+      <strong>4. Configurer les variables d'environnement</strong><br>
+      <div class="code">Copy-Item .env.example .env # Windows</div>
+      <p class="mt-xs">Éditer le fichier <code>.env</code> avec vos identifiants MySQL :</p>
+      <div class="code">DB_HOST=localhost<br>DB_USER=root<br>DB_PASSWORD=votre_mot_de_passe<br>DB_NAME=ifri_mentorLink
+      </div>
+    </div>
+
+    <div class="step">
+      <strong>5. Lancer le serveur</strong><br>
+      <div class="code">python backend/messagerie.py</div>
+      <p class="mt-xs">Le serveur démarre sur <strong>http://localhost:5001</strong>.</p>
+    </div>
+
+    <div class="step">
+      <strong>6. Ouvrir l'application</strong><br>
+      <p>Naviguer vers <code>http://localhost:5001</code> dans le navigateur.</p>
+    </div>
+
+    <!-- Utilisation -->
+    <h2>4. Manuel d'Utilisation</h2>
+
+    <h3>4.1 Messagerie</h3>
+    <p>La page principale de messagerie se compose de deux zones :</p>
+    <ul>
+      <li><strong>Panneau gauche</strong> : Liste des conversations triées par date, avec le dernier message et le
+        nombre de messages non lus.</li>
+      <li><strong>Panneau droit</strong> : Fenêtre de chat affichant l'historique des messages de la conversation
+        sélectionnée.</li>
+    </ul>
+
+    <p><strong>Fonctionnalités :</strong></p>
+    <ul>
+      <li><strong>Consulter une conversation</strong> : Cliquer sur une conversation dans la liste pour charger son
+        historique.</li>
+      <li><strong>Envoyer un message</strong> : Saisir le texte dans le champ en bas et appuyer sur Entrée ou cliquer
+        sur le bouton ➤.</li>
+      <li><strong>Messages en temps réel</strong> : Les nouveaux messages apparaissent instantanément grâce à SocketIO.
+      </li>
+      <li><strong>Marquage automatique</strong> : Les messages sont marqués comme lus dès que la conversation est
+        ouverte.</li>
+      <li><strong>Recherche</strong> : Filtrer les conversations par nom dans la barre de recherche.</li>
+      <li><strong>Indicateur de non-lus</strong> : Un badge bleu sur une conversation indique les messages non lus.</li>
+    </ul>
+
+    <h3>4.2 Notifications</h3>
+    <ul>
+      <li>Cliquer sur l'icône 🔔 dans la barre de navigation pour ouvrir le panneau des notifications.</li>
+      <li>Les notifications sont classées par type (message, match, réponse) avec un code couleur.</li>
+      <li>Le badge rouge sur l'icône indique le nombre de notifications non lues, mis à jour automatiquement toutes les
+        3 secondes.</li>
+    </ul>
+
+    <h3>4.3 Comportement attendu</h3>
+    <ul>
+      <li>L'utilisateur courant est défini par défaut à l'ID 1 (Aimé Koffi) via la session Flask.</li>
+      <li>Les données de test incluent 2 discussions actives avec messages et notifications préremplis.</li>
+      <li>Le serveur WebSocket permet une communication bidirectionnelle sans rechargement de page.</li>
+    </ul>
+
+    <h3>4.4 Dépannage</h3>
+    <table>
+      <tr>
+        <th>Problème</th>
+        <th>Cause possible</th>
+        <th>Solution</th>
+      </tr>
+      <tr>
+        <td>Conversations vides</td>
+        <td>Base de données non initialisée</td>
+        <td>Exécuter Files.sql dans MySQL</td>
+      </tr>
+      <tr>
+        <td>WebSocket ne se connecte pas</td>
+        <td>Port 5001 bloqué</td>
+        <td>Vérifier le pare-feu ou changer de port</td>
+      </tr>
+      <tr>
+        <td>Erreur de connexion MySQL</td>
+        <td>.env mal configuré</td>
+        <td>Vérifier DB_HOST, DB_USER, DB_PASSWORD dans .env</td>
+      </tr>
+    </table>
+
+    <h3>4.5 Routes de l'API</h3>
+    <table>
+      <tr>
+        <th>Méthode</th>
+        <th>Route</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/</td>
+        <td>Page HTML de la messagerie</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/discussions</td>
+        <td>Liste des conversations de l'utilisateur</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/discussion/&lt;id&gt;</td>
+        <td>Historique des messages d'une conversation</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/discussion/&lt;id&gt;/read</td>
+        <td>Marquer les messages comme lus</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/notifications</td>
+        <td>Notifications non lues de l'utilisateur</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/notifications/count</td>
+        <td>Nombre de notifications non lues</td>
+      </tr>
+      <tr>
+        <td>SocketIO</td>
+        <td>send_message</td>
+        <td>Événement d'envoi de message temps réel</td>
+      </tr>
+      <tr>
+        <td>SocketIO</td>
+        <td>receive_message</td>
+        <td>Réception d'un message temps réel</td>
+      </tr>
+    </table>
+
+    <!-- Savoir-être -->
+    <h2>5. Compétences Transversales</h2>
+
+    <h3>5.1 Collaboration</h3>
+    <p>Capacité à travailler en équipe, à partager les responsabilités, à coordonner les efforts pour atteindre des
+      objectifs communs. Le projet a été mené en groupe de 6, avec une répartition claire des tâches (backend, frontend,
+      base de données, rapport) et une communication régulière via WhatsApp et GitHub.</p>
+
+    <h3>5.2 Gestion du Temps</h3>
+    <p>Capacité à gérer efficacement le temps et à respecter les délais fixés pour les différentes tâches du projet. Les
+      fonctionnalités ont été livrées par itérations (messagerie, notifications, rapport) avec des deadlines
+      intermédiaires respectées.</p>
+
+    <h3>5.3 Résolution de Problèmes</h3>
+    <p>Capacité à identifier et à résoudre les problèmes rencontrés tout au long du projet, à rechercher des solutions
+      alternatives et à prendre des décisions éclairées. Exemples : correction des accents dans les noms de tables SQL,
+      configuration de l'environnement pour la connexion MySQL, fallback polling 3s pour les notifications en cas
+      d'indisponibilité WebSocket.</p>
+
+    <p class="footer">
+      Rapport généré dans le cadre du projet PIL1 2526_37 — Juin 2026
+    </p>
+
+  </div>
+</body>
+
+</html>
