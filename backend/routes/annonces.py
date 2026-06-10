@@ -4,6 +4,29 @@ from db import mysql
 annonces_bp = Blueprint('annonces', __name__)
 
 
+def timedelta_to_str(td):
+    if td is None:
+        return ''
+    if hasattr(td, 'total_seconds'):
+        total = int(td.total_seconds())
+        h = total // 3600
+        m = (total % 3600) // 60
+        return f"{h:02d}:{m:02d}:00"
+    return str(td)
+
+
+def normaliser_dispos(dispos_raw):
+    result = []
+    for d in dispos_raw:
+        result.append({
+            'id_dispo':    d['id_dispo'],
+            'jour':        d['jour'],
+            'heure_debut': timedelta_to_str(d['heure_debut']),
+            'heure_fin':   timedelta_to_str(d['heure_fin']),
+        })
+    return result
+
+
 def login_required(f):
     from functools import wraps
     @wraps(f)
@@ -14,6 +37,8 @@ def login_required(f):
         return f(*args, **kwargs)
     return decorated
 
+
+# ─── Liste des annonces publiques ────────────────────────────────────────────
 
 @annonces_bp.route('/annonces', methods=['GET'])
 @login_required
@@ -29,7 +54,7 @@ def liste():
     matieres = cur.fetchall()
 
     cur.execute("SELECT * FROM `Disponibilites`")
-    dispos = cur.fetchall()
+    dispos = normaliser_dispos(cur.fetchall())
 
     cur.execute("SELECT id_matiere FROM BESOIN WHERE id_utilisateur = %s", (session['id'],))
     mes_lacunes = [r['id_matiere'] for r in cur.fetchall()]
@@ -91,6 +116,7 @@ def liste():
 
     cur.close()
 
+    # Pas besoin de passer user= : le context processor l'injecte automatiquement
     return render_template('annonces.html',
                            annonces=annonces_pertinentes,
                            matieres=matieres,
@@ -101,8 +127,48 @@ def liste():
                            type_annonce=type_annonce,
                            mes_lacunes=mes_lacunes,
                            mes_competences=mes_competences,
-                           deja_repondu=deja_repondu)
+                           deja_repondu=deja_repondu,
+                           active='annonces')
 
+
+# ─── Mes annonces ────────────────────────────────────────────────────────────
+
+@annonces_bp.route('/mes-annonces', methods=['GET'])
+@login_required
+def mes_annonces():
+    cur = mysql.connection.cursor()
+
+    cur.execute("""
+        SELECT a.*,
+               GROUP_CONCAT(DISTINCT m.nom_matiere ORDER BY m.nom_matiere SEPARATOR ', ') AS matieres_annonce,
+               GROUP_CONCAT(DISTINCT CONCAT(d.jour, ' ', d.heure_debut, '-', d.heure_fin) SEPARATOR ' | ') AS dispos_annonce
+        FROM Annonces a
+        LEFT JOIN ANNONCE_MATIERE am ON a.id_annonce = am.id_annonce
+        LEFT JOIN `Matieres` m ON am.id_matiere = m.id_matiere
+        LEFT JOIN ANNONCE_DISPONIBILITE ad ON a.id_annonce = ad.id_annonce
+        LEFT JOIN `Disponibilites` d ON ad.id_dispo = d.id_dispo
+        WHERE a.id_utilisateur = %s
+        GROUP BY a.id_annonce
+        ORDER BY a.date_creation DESC
+    """, (session['id'],))
+    annonces = cur.fetchall()
+
+    cur.execute("SELECT * FROM `Matieres`")
+    matieres = cur.fetchall()
+
+    cur.execute("SELECT * FROM `Disponibilites`")
+    dispos = normaliser_dispos(cur.fetchall())
+
+    cur.close()
+
+    return render_template('mes_annonces.html',
+                           annonces=annonces,
+                           matieres=matieres,
+                           dispos=dispos,
+                           active='mes_annonces')
+
+
+# ─── Créer une annonce ───────────────────────────────────────────────────────
 
 @annonces_bp.route('/annonces/new', methods=['POST'])
 @login_required
@@ -135,8 +201,79 @@ def new():
     cur.close()
 
     flash('Annonce créée avec succès.', 'success')
-    return redirect(url_for('annonces.liste'))
+    return redirect(url_for('annonces.mes_annonces'))
 
+
+# ─── Modifier une annonce ────────────────────────────────────────────────────
+
+@annonces_bp.route('/annonces/modifier/<int:id_annonce>', methods=['POST'])
+@login_required
+def modifier(id_annonce):
+    type_annonce   = request.form.get('type_annonce', '')
+    format_session = request.form.get('format_session', '')
+    statut         = request.form.get('statut', 'actif')
+    description    = request.form.get('description_perso', '').strip()
+    id_matieres    = request.form.getlist('matieres')
+    id_dispos      = request.form.getlist('disponibilites')
+
+    cur = mysql.connection.cursor()
+
+    # Vérifier que l'annonce appartient bien à l'utilisateur
+    cur.execute("SELECT id_utilisateur FROM Annonces WHERE id_annonce = %s", (id_annonce,))
+    row = cur.fetchone()
+    if not row or row['id_utilisateur'] != session['id']:
+        cur.close()
+        flash("Action non autorisée.", 'danger')
+        return redirect(url_for('annonces.mes_annonces'))
+
+    cur.execute("""
+        UPDATE Annonces
+        SET type_annonce=%s, format_session=%s, statut=%s, description_perso=%s
+        WHERE id_annonce=%s
+    """, (type_annonce, format_session, statut, description, id_annonce))
+
+    cur.execute("DELETE FROM ANNONCE_MATIERE WHERE id_annonce = %s", (id_annonce,))
+    cur.execute("DELETE FROM ANNONCE_DISPONIBILITE WHERE id_annonce = %s", (id_annonce,))
+
+    for id_matiere in id_matieres:
+        cur.execute("INSERT INTO ANNONCE_MATIERE (id_annonce, id_matiere) VALUES (%s, %s)", (id_annonce, id_matiere))
+
+    for id_dispo in id_dispos:
+        cur.execute("INSERT INTO ANNONCE_DISPONIBILITE (id_annonce, id_dispo) VALUES (%s, %s)", (id_annonce, id_dispo))
+
+    mysql.connection.commit()
+    cur.close()
+
+    flash('Annonce modifiée avec succès.', 'success')
+    return redirect(url_for('annonces.mes_annonces'))
+
+
+# ─── Supprimer une annonce ───────────────────────────────────────────────────
+
+@annonces_bp.route('/annonces/supprimer/<int:id_annonce>', methods=['POST'])
+@login_required
+def supprimer(id_annonce):
+    cur = mysql.connection.cursor()
+
+    cur.execute("SELECT id_utilisateur FROM Annonces WHERE id_annonce = %s", (id_annonce,))
+    row = cur.fetchone()
+    if not row or row['id_utilisateur'] != session['id']:
+        cur.close()
+        flash("Action non autorisée.", 'danger')
+        return redirect(url_for('annonces.mes_annonces'))
+
+    cur.execute("DELETE FROM ANNONCE_MATIERE WHERE id_annonce = %s", (id_annonce,))
+    cur.execute("DELETE FROM ANNONCE_DISPONIBILITE WHERE id_annonce = %s", (id_annonce,))
+    cur.execute("DELETE FROM `Reponses` WHERE id_annonce = %s", (id_annonce,))
+    cur.execute("DELETE FROM Annonces WHERE id_annonce = %s", (id_annonce,))
+    mysql.connection.commit()
+    cur.close()
+
+    flash('Annonce supprimée.', 'success')
+    return redirect(url_for('annonces.mes_annonces'))
+
+
+# ─── Répondre à une annonce ──────────────────────────────────────────────────
 
 @annonces_bp.route('/annonces/repondre', methods=['POST'])
 @login_required
@@ -177,6 +314,9 @@ def repondre():
     flash('Réponse envoyée.', 'success')
     return redirect(url_for('annonces.liste'))
 
+
+# ─── Voir le profil d'un utilisateur ────────────────────────────────────────
+
 @annonces_bp.route('/utilisateur/<int:id_utilisateur>')
 @login_required
 def voir_profil(id_utilisateur):
@@ -210,10 +350,12 @@ def voir_profil(id_utilisateur):
         WHERE ud.id_utilisateur = %s
     """, (id_utilisateur,))
     dispos = cur.fetchall()
-
     cur.close()
-    return render_template('voir_profil.html',
+
+    # Pas besoin de passer user= : le context processor l'injecte automatiquement
+    return render_template("voir_profil.html",
                            utilisateur=utilisateur,
                            points_forts=points_forts,
                            points_faibles=points_faibles,
-                           dispos=dispos)
+                           dispos=dispos,
+                           active="explorer")

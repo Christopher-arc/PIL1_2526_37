@@ -1,59 +1,106 @@
 {% extends "base.html" %}
 
+{% block titre %}Matching{% endblock %}
+
 {% block content %}
 <h2 class="page-titre">Matching Automatique</h2>
 <p class="page-sub">Correspondances calculées selon vos compétences, filière et disponibilités.</p>
 
-<div class="expl-score bg-white border rounded p-3 mb-4 d-flex gap-4 flex-wrap">
-  <div class="d-flex gap-2"><div class="bg-success rounded-circle" style="width:9px;height:9px;margin-top:3px"></div><div><strong>Compétences (45 pts)</strong><br class="d-none d-md-block"><span class="small text-secondary">compatibilité mentor/mentoré</span></div></div>
-  <div class="d-flex gap-2"><div class="bg-primary rounded-circle" style="width:9px;height:9px;margin-top:3px"></div><div><strong>Filière (15 pts)</strong><br class="d-none d-md-block"><span class="small text-secondary">même filière = 15 pts</span></div></div>
-  <div class="d-flex gap-2"><div class="bg-info rounded-circle" style="width:9px;height:9px;margin-top:3px"></div><div><strong>Disponibilités (40 pts)</strong><br class="d-none d-md-block"><span class="small text-secondary">créneaux compatibles</span></div></div>
+<!-- Légende scores -->
+<div class="carte-pp p-3 mb-4 d-flex gap-4 flex-wrap">
+  <div class="d-flex gap-2 align-items-start">
+    <div class="bg-success rounded-circle mt-1" style="width:9px;height:9px;flex-shrink:0"></div>
+    <div><strong>Compétences (45 pts)</strong><br><span class="small text-secondary">matières compatibles</span></div>
+  </div>
+  <div class="d-flex gap-2 align-items-start">
+    <div class="bg-primary rounded-circle mt-1" style="width:9px;height:9px;flex-shrink:0"></div>
+    <div><strong>Filière (15 pts)</strong><br><span class="small text-secondary">même filière = 15 pts</span></div>
+  </div>
+  <div class="d-flex gap-2 align-items-start">
+    <div class="rounded-circle mt-1" style="width:9px;height:9px;background:#7c3aed;flex-shrink:0"></div>
+    <div><strong>Disponibilités (40 pts)</strong><br><span class="small text-secondary">créneaux compatibles</span></div>
+  </div>
 </div>
 
+<!-- Filtres -->
 <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-4">
   <div class="d-flex gap-2">
-    <button class="filter-btn {% if matching_filter == 'all' %}actif{% endif %}" onclick="window.location.href='?filter=all'">Tous</button>
-    <button class="filter-btn {% if matching_filter == 'mentor' %}actif{% endif %}" onclick="window.location.href='?filter=mentor'">Mentors</button>
-    <button class="filter-btn {% if matching_filter == 'mentore' %}actif{% endif %}" onclick="window.location.href='?filter=mentore'">Mentorés</button>
+    <button class="filter-btn {% if matching_filter == 'all' %}actif{% endif %}"
+            onclick="window.location.href='?filter=all&min={{ min_score }}'">Tous</button>
+    <button class="filter-btn {% if matching_filter == 'mentor' %}actif{% endif %}"
+            onclick="window.location.href='?filter=mentor&min={{ min_score }}'">Mentors</button>
+    <button class="filter-btn {% if matching_filter == 'mentore' %}actif{% endif %}"
+            onclick="window.location.href='?filter=mentore&min={{ min_score }}'">Mentorés</button>
   </div>
   <div class="d-flex align-items-center gap-2 bg-light px-3 py-1 rounded-pill">
     <span class="small text-secondary">Score min :</span>
-    <span class="small">⚙️</span>
-    <input type="number" id="minScore" value="{{ min_score }}" min="0" max="100" step="5" class="form-control form-control-sm" style="width:60px" onchange="window.location.href='?filter={{ matching_filter }}&min='+this.value">
+    <input type="number" id="minScore" value="{{ min_score }}" min="0" max="100" step="5"
+           class="form-control form-control-sm" style="width:60px"
+           onchange="window.location.href='?filter={{ matching_filter }}&min='+this.value">
   </div>
-  <span class="badge bg-secondary bg-opacity-10 text-dark px-3 py-2 rounded-pill">{{ matching_data|length }} résultats</span>
+  <span class="badge bg-secondary bg-opacity-10 text-dark px-3 py-2 rounded-pill">
+    {{ matching_data|length }} résultat{% if matching_data|length > 1 %}s{% endif %}
+  </span>
 </div>
 
+<!-- Formulaire caché pour contacter -->
+<form id="formContacter" method="POST" action="" style="display:none"></form>
+
 {% for match in matching_data %}
-<div class="carte-matching p-3 mb-3 {% if loop.first and matching_data|length > 0 %}meilleure{% endif %}">
-  {% if loop.first and matching_data|length > 0 %}
+<div class="carte-matching p-3 mb-3 {% if loop.first %}meilleure{% endif %}">
+  {% if loop.first %}
   <div class="label-meilleure mb-2">⭐ Meilleure correspondance</div>
   {% endif %}
+
   <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
-    <!-- <div class="avatar" style="background:{{ match.couleur }};width:42px;height:42px">{{ match.initiales }}</div> -->
+    <div class="avatar" style="background:{{ match.couleur }};width:44px;height:44px">
+      {{ match.initiales }}
+    </div>
     <div class="flex-grow-1">
       <div class="fw-semibold text-dark">{{ match.nom }}</div>
       <div class="small text-secondary">{{ match.filiere }} · {{ match.niveau }}</div>
-      <span class="{% if match.role == 'mentor' %}bv{% else %}bvio{% endif %}">{{ match.role|capitalize }}</span>
+      <span class="{% if match.role == 'mentor' %}bv{% else %}bvio{% endif %} mt-1">
+        {{ match.role|capitalize }}
+      </span>
     </div>
     <div class="text-end">
-      <div class="fs-3 fw-bold text-dark">{{ match.total }}</div>
+      <div class="fs-2 fw-bold text-dark">{{ match.total }}</div>
       <div class="small text-secondary">/ 100</div>
     </div>
   </div>
-  <div class="progress-label"><span>Compétences (45 pts)</span><span>{{ match.competences }}/45</span></div>
-  <!-- <div class="barre-bg"><div class="barre-fill" style="width:{{ (match.competences/45)*100 }}%;background:#2ecc71"></div></div> -->
-  <div class="progress-label"><span>Filière (15 pts)</span><span>{{ match.filiere_score }}/15</span></div>
-  <!-- <div class="barre-bg"><div class="barre-fill" style="width:{{ (match.filiere_score/15)*100 }}%;background:#3498db"></div></div> -->
-  <div class="progress-label"><span>Disponibilités (40 pts)</span><span>{{ match.dispo_score }}/40</span></div>
-  <div class="barre-bg mb-3"><div class="barre-fill" style="width:{{ (match.dispo_score/40)*100 }}%;background:#7c3aed"></div></div>
+
+  <!-- Barres de score -->
+  <div class="progress-label"><span>Compétences</span><span>{{ match.competences }}/45</span></div>
+  <div class="barre-bg mb-1">
+    <div class="barre-fill" style="width:{{ ((match.competences/45)*100)|round }}%;background:#2ecc71"></div>
+  </div>
+
+  <div class="progress-label"><span>Filière</span><span>{{ match.filiere_score }}/15</span></div>
+  <div class="barre-bg mb-1">
+    <div class="barre-fill" style="width:{{ ((match.filiere_score/15)*100)|round }}%;background:#3498db"></div>
+  </div>
+
+  <div class="progress-label"><span>Disponibilités</span><span>{{ match.dispo_score }}/40</span></div>
+  <div class="barre-bg mb-3">
+    <div class="barre-fill" style="width:{{ ((match.dispo_score/40)*100)|round }}%;background:#7c3aed"></div>
+  </div>
+
   <div class="d-flex gap-2">
-    <button class="btn-outline-sm">Détails</button>
-    <button class="btn-outline-sm">Voir profil</button>
-    <button class="btn-navy ms-auto">Contacter</button>
+    <a href="/utilisateur/{{ match.id_mentor }}" class="btn-outline-sm">Voir profil</a>
+    <!-- Contacter → crée une discussion et redirige vers messagerie -->
+    <form method="POST" action="/messagerie/contacter/{{ match.id_mentor }}" class="d-inline">
+      <button type="submit" class="btn-navy ms-auto">✉ Contacter</button>
+    </form>
   </div>
 </div>
 {% else %}
-<div class="carte-matching p-5 text-center text-secondary">Aucun résultat pour ce score minimum</div>
+<div class="carte-matching p-5 text-center text-secondary">
+  <div class="fs-3 mb-2">🔍</div>
+  Aucun résultat.
+  {% if min_score > 0 %}Essayez de baisser le score minimum.{% else %}
+  Complétez votre profil avec des matières pour trouver des correspondances.
+  <br><a href="/profil" class="btn-navy mt-3 d-inline-block">Compléter mon profil</a>
+  {% endif %}
+</div>
 {% endfor %}
 {% endblock %}

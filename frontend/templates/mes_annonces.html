@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+
+{% block titre %}Mes annonces{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+  <div>
+    <h2 class="page-titre" style="margin:0">Mes annonces</h2>
+    <p class="page-sub mb-0">Gérez vos offres et demandes publiées.</p>
+  </div>
+  <a href="/annonces" class="btn-navy">+ Nouvelle annonce</a>
+</div>
+
+{% if annonces %}
+  {% for a in annonces %}
+  <div class="carte-pp p-3 mb-3">
+    <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+      <span class="{{ 'bo' if a['type_annonce'] == 'offre' else 'bd' }}">
+        {{ 'Offre de mentorat' if a['type_annonce'] == 'offre' else 'Demande de mentorat' }}
+      </span>
+      <span class="bb">{{ a['format_session'] }}</span>
+      <span class="{{ 'bv' if a['statut'] == 'actif' else 'bb' }}">
+        {{ '✓ Active' if a['statut'] == 'actif' else '✗ Fermée' }}
+      </span>
+      <span class="small text-secondary ms-auto">
+        Publiée le {{ a['date_creation'].strftime('%d/%m/%Y à %H:%M') if a['date_creation'] else '' }}
+      </span>
+    </div>
+
+    {% if a['description_perso'] %}
+    <p class="small text-secondary mb-2">{{ a['description_perso'] }}</p>
+    {% endif %}
+
+    {% if a['matieres_annonce'] %}
+    <div class="mb-2">
+      <span class="small fw-semibold text-dark">Matières : </span>
+      {% for m in a['matieres_annonce'].split(', ') %}
+      <span class="pill">{{ m }}</span>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if a['dispos_annonce'] %}
+    <div class="small text-secondary mb-3">📅 {{ a['dispos_annonce'] }}</div>
+    {% endif %}
+
+    <div class="d-flex gap-2 flex-wrap">
+      <!-- Supprimer -->
+      <form method="POST" action="/annonces/supprimer/{{ a['id_annonce'] }}"
+            onsubmit="return confirm('Supprimer définitivement cette annonce ?')" class="d-inline">
+        <button type="submit" class="btn-danger-sm">🗑 Supprimer</button>
+      </form>
+
+      <!-- Basculer modifier -->
+      <button class="btn-outline-sm" onclick="toggleModifier({{ a['id_annonce'] }})">✏️ Modifier</button>
+    </div>
+
+    <!-- Formulaire modifier (dépliable) -->
+    <div id="mod-{{ a['id_annonce'] }}" style="display:none;margin-top:16px;padding-top:16px;border-top:1px solid #dde3ef">
+      <form method="POST" action="/annonces/modifier/{{ a['id_annonce'] }}">
+        <div class="row g-2 mb-3">
+          <div class="col-auto">
+            <label class="form-label small fw-semibold">Type</label>
+            <select name="type_annonce" class="form-select form-select-sm" required>
+              <option value="offre"   {% if a['type_annonce'] == 'offre'   %}selected{% endif %}>Offre</option>
+              <option value="demande" {% if a['type_annonce'] == 'demande' %}selected{% endif %}>Demande</option>
+            </select>
+          </div>
+          <div class="col-auto">
+            <label class="form-label small fw-semibold">Format</label>
+            <select name="format_session" class="form-select form-select-sm" required>
+              <option value="présentiel" {% if a['format_session'] == 'présentiel' %}selected{% endif %}>Présentiel</option>
+              <option value="en_ligne"   {% if a['format_session'] == 'en_ligne'   %}selected{% endif %}>En ligne</option>
+              <option value="les_deux"   {% if a['format_session'] == 'les_deux'   %}selected{% endif %}>Les deux</option>
+            </select>
+          </div>
+          <div class="col-auto">
+            <label class="form-label small fw-semibold">Statut</label>
+            <select name="statut" class="form-select form-select-sm">
+              <option value="actif"  {% if a['statut'] == 'actif'  %}selected{% endif %}>Active</option>
+              <option value="fermée" {% if a['statut'] == 'fermée' %}selected{% endif %}>Fermée</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row g-3 mb-3">
+          <div class="col-6">
+            <label class="form-label small fw-semibold">Matières</label>
+            <div class="d-flex flex-wrap gap-1 p-2 border rounded" style="max-height:110px;overflow-y:auto">
+              {% for m in matieres %}
+              <label class="d-flex align-items-center gap-1 small border rounded px-2 py-1" style="cursor:pointer">
+                <input type="checkbox" name="matieres" value="{{ m['id_matiere'] }}">
+                {{ m['nom_matiere'] }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+          <div class="col-6">
+            <label class="form-label small fw-semibold">Disponibilités</label>
+            <div class="d-flex flex-wrap gap-1 p-2 border rounded" style="max-height:110px;overflow-y:auto">
+              {% for d in dispos %}
+              <label class="d-flex align-items-center gap-1 small border rounded px-2 py-1" style="cursor:pointer">
+                <input type="checkbox" name="disponibilites" value="{{ d['id_dispo'] }}">
+                {{ d['jour'] }} {{ d['heure_debut'] }}-{{ d['heure_fin'] }}
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label small fw-semibold">Description</label>
+          <textarea name="description_perso" class="form-control form-control-sm" rows="2">{{ a['description_perso'] or '' }}</textarea>
+        </div>
+
+        <div class="d-flex gap-2">
+          <button type="submit" class="btn-navy">Enregistrer</button>
+          <button type="button" class="btn-outline-sm" onclick="toggleModifier({{ a['id_annonce'] }})">Annuler</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  {% endfor %}
+
+{% else %}
+  <div class="carte-pp p-5 text-center text-secondary">
+    <div class="fs-2 mb-3">📌</div>
+    <div class="fw-semibold mb-2">Aucune annonce publiée</div>
+    <a href="/annonces" class="btn-navy">Publier ma première annonce</a>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleModifier(id) {
+  var el = document.getElementById('mod-' + id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

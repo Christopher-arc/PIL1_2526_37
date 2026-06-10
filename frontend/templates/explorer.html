@@ -1,116 +1,205 @@
 {% extends "base.html" %}
 
+{% block titre %}Explorer{% endblock %}
+
 {% block content %}
 <h2 class="page-titre">Explorer</h2>
 <p class="page-sub">Parcourez les profils et les offres de mentorat disponibles.</p>
 
-<input class="barre-recherche mb-4" type="text" id="searchInput" placeholder="Rechercher par nom, filière, compétence..." onkeyup="filterContent()">
+<input class="barre-recherche mb-4" type="text" id="searchInput"
+       placeholder="Rechercher par nom, filière, compétence…" oninput="displayContent()">
 
 <div class="tabs-explorer">
   <div class="tab-exp actif" onclick="switchTab('profils')">Profils</div>
-  <div class="tab-exp" onclick="switchTab('offres')">Offres & Demandes</div>
+  <div class="tab-exp" onclick="switchTab('offres')">Offres &amp; Demandes</div>
 </div>
 
 <div id="explorerContent"></div>
 
+<!-- Formulaire caché pour "Contacter" (POST vers messagerie) -->
+<form id="formContacter" method="POST" action="" style="display:none">
+  <input type="hidden" name="message_accomp" value="">
+</form>
+
 <script>
-  let currentTab = 'profils';
-  let searchText = '';
-  let currentFilter = 'all';
-  
-  const profils = {{ profils|tojson }};
-  const annonces = {{ annonces|tojson }};
-  
+  var currentTab    = 'profils';
+  var currentFilter = 'all';
+
+  // Profils depuis la BDD (injectés par Flask)
+  var profils = {{ profils | tojson | safe }};
+
+  // Annonces depuis la BDD
+  var annoncesRaw = {{ annonces | tojson | safe }};
+  var couleurs = ['#7c3aed','#2ecc71','#e67e22','#3498db','#e74c3c','#1abc9c','#9b59b6','#f39c12'];
+
+  var annonces = annoncesRaw.map(function(a, i) {
+    var nom      = ((a.prenom || '') + ' ' + (a.nom || '')).trim();
+    var initiales = ((a.nom||'?')[0] + (a.prenom||'?')[0]).toUpperCase();
+    var mats     = a.matieres_annonce ? a.matieres_annonce.split(', ') : [];
+    return {
+      id_annonce:      a.id_annonce,
+      id_utilisateur:  a.id_utilisateur,
+      titre:           a.description_perso || a.type_annonce,
+      auteur:          nom,
+      filiere:         a.filiere || '',
+      type:            a.type_annonce,
+      description:     a.description_perso || '',
+      competences:     mats,
+      initiales:       initiales,
+      couleur:         couleurs[i % couleurs.length],
+      date:            a.date_creation || '',
+      format:          a.format_session || '',
+    };
+  });
+
+  // Rôles dynamiques selon présence dans MAITRISE / BESOIN
+  // (Pour simplifier côté JS, on utilise les compétences : si l'utilisateur a des compétences → Mentor potentiel)
+  function getRoleLabel(p) {
+    var hasForts   = p.competences && p.competences.length > 0;
+    if (hasForts) return 'Mentor';
+    return 'Mentoré';
+  }
+
+  function getRoleClass(role) {
+    if (role === 'Mentor') return 'bv';
+    if (role === 'Mentoré') return 'bvio';
+    return 'bb';
+  }
+
   function switchTab(tab) {
     currentTab = tab;
-    document.querySelectorAll('.tab-exp').forEach(t => t.classList.remove('actif'));
-    if(tab === 'profils') document.querySelectorAll('.tab-exp')[0].classList.add('actif');
-    else document.querySelectorAll('.tab-exp')[1].classList.add('actif');
+    document.querySelectorAll('.tab-exp').forEach(function(t, i) {
+      t.classList.toggle('actif', (tab === 'profils' && i === 0) || (tab === 'offres' && i === 1));
+    });
     displayContent();
   }
-  
-  function filterContent() {
-    searchText = document.getElementById('searchInput').value.toLowerCase();
-    displayContent();
-  }
-  
+
   function filterAnnonces(type) {
     currentFilter = type;
     displayContent();
   }
-  
-  function getRoleClass(role) {
-    if(role === 'Mentor') return 'bv';
-    if(role === 'Mentoré') return 'bvio';
-    return 'bb';
+
+  function contacter(idUtilisateur) {
+    var form = document.getElementById('formContacter');
+    form.action = '/messagerie/contacter/' + idUtilisateur;
+    form.submit();
   }
-  
+
   function displayContent() {
-    const container = document.getElementById('explorerContent');
-    if(currentTab === 'profils') {
-      let filtered = profils.filter(p => !searchText || p.nom.toLowerCase().includes(searchText) || p.filiere.toLowerCase().includes(searchText) || p.competences.some(c => c.toLowerCase().includes(searchText)));
-      container.innerHTML = `
-        <div class="d-flex gap-3 align-items-center mb-3 flex-wrap">
-          <select class="form-select" style="width:155px;font-size:0.8rem" id="roleFilter" onchange="displayContent()">
-            <option value="all">Tous les rôles</option><option value="Mentor">Mentors</option><option value="Mentoré">Mentorés</option><option value="Mentor & Mentoré">Les deux</option>
-          </select>
-          <select class="form-select" style="width:175px;font-size:0.8rem" id="filiereFilter" onchange="displayContent()">
-            <option value="all">Toutes les filières</option><option value="RSI">RSI</option><option value="IM">IM</option><option value="GL">GL</option><option value="GLG">GLG</option><option value="IA">IA</option><option value="Cybersécurité">Cybersécurité</option>
-          </select>
-          <span class="small text-secondary ms-auto">${filtered.length} profils</span>
-        </div>
-        <div class="row g-3">
-          ${filtered.filter(p => {
-            let role = document.getElementById('roleFilter')?.value || 'all';
-            let filiere = document.getElementById('filiereFilter')?.value || 'all';
-            return (role === 'all' || p.role === role) && (filiere === 'all' || p.filiere === filiere);
-          }).map(p => `
-            <div class="col-6">
-              <div class="carte-profil p-3">
-                <div class="d-flex align-items-center gap-2 mb-2">
-                  <div class="avatar" style="background:${p.couleur};width:40px;height:40px">${p.initiales}</div>
-                  <div class="flex-grow-1"><div class="fw-semibold text-dark">${p.nom}</div><div class="small text-secondary">${p.filiere}</div></div>
-                  <span class="${getRoleClass(p.role)}">${p.role}</span>
-                </div>
-                <div class="small text-secondary mb-2">${p.bio.substring(0,100)}...</div>
-                <div>${p.competences.map(c => `<span class="pill">${c}</span>`).join('')}</div>
-                <div class="small text-secondary mt-2">★ ${p.note} · ${p.sessions} sessions</div>
-                <div class="d-flex gap-2 mt-2"><button class="btn-outline-sm">Profil</button><button class="btn-navy">Contacter</button></div>
-              </div>
-            </div>
-          `).join('')}
-        </div>
-      `;
-    } else {
-      let filtered = annonces.filter(a => {
-        let matchSearch = !searchText || a.titre.toLowerCase().includes(searchText) || a.auteur.toLowerCase().includes(searchText) || a.filiere.toLowerCase().includes(searchText) || a.competences.some(c => c.toLowerCase().includes(searchText));
-        let matchType = currentFilter === 'all' || a.type === currentFilter;
-        return matchSearch && matchType;
+    var searchText = document.getElementById('searchInput').value.toLowerCase();
+    var container  = document.getElementById('explorerContent');
+
+    if (currentTab === 'profils') {
+      var roleFilter    = document.getElementById('roleFilter')    ? document.getElementById('roleFilter').value    : 'all';
+      var filiereFilter = document.getElementById('filiereFilter') ? document.getElementById('filiereFilter').value : 'all';
+
+      var filtered = profils.filter(function(p) {
+        var role = getRoleLabel(p);
+        var matchSearch = !searchText
+          || (p.nom||'').toLowerCase().includes(searchText)
+          || (p.filiere||'').toLowerCase().includes(searchText)
+          || (p.competences||[]).some(function(c){ return c.toLowerCase().includes(searchText); });
+        var matchRole    = roleFilter    === 'all' || role === roleFilter;
+        var matchFiliere = filiereFilter === 'all' || (p.filiere||'') === filiereFilter;
+        return matchSearch && matchRole && matchFiliere;
       });
+
       container.innerHTML = `
         <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
-          <button class="filter-btn ${currentFilter === 'all' ? 'actif' : ''}" onclick="filterAnnonces('all')">Tout</button>
-          <button class="filter-btn ${currentFilter === 'offre' ? 'actif' : ''}" onclick="filterAnnonces('offre')">Offres</button>
-          <button class="filter-btn ${currentFilter === 'demande' ? 'actif' : ''}" onclick="filterAnnonces('demande')">Demandes</button>
-          <span class="small text-secondary ms-3">${filtered.length} annonces</span>
+          <select class="form-select form-select-sm" style="width:155px" id="roleFilter" onchange="displayContent()">
+            <option value="all">Tous les rôles</option>
+            <option value="Mentor">Mentors</option>
+            <option value="Mentoré">Mentorés</option>
+          </select>
+          <select class="form-select form-select-sm" style="width:175px" id="filiereFilter" onchange="displayContent()">
+            <option value="all">Toutes les filières</option>
+            <option value="ISI">ISI</option><option value="IM">IM</option>
+            <option value="GL">GL</option><option value="SE&IoT">SE&IoT</option><option value="SI">SI</option>
+          </select>
+          <span class="small text-secondary ms-auto">${filtered.length} profil(s)</span>
         </div>
-        ${filtered.map(a => `
-          <div class="carte-offre p-3 mb-3">
-            <div class="d-flex align-items-center gap-2 mb-2 flex-wrap">
-              <div class="avatar" style="background:${a.couleur};width:40px;height:40px">${a.initiales}</div>
-              <div><div class="fw-semibold text-dark">${a.titre}</div><div class="small text-secondary">par ${a.auteur} - ${a.filiere}</div></div>
-              <span class="ms-auto ${a.type === 'offre' ? 'bo' : 'bd'}">${a.type === 'offre' ? 'Offre de mentorat' : 'Demande de mentorat'}</span>
-            </div>
-            <div class="small text-secondary mb-2">${a.description}</div>
-            <div>${a.competences.map(c => `<span class="pill">${c}</span>`).join('')}</div>
-            <div class="small text-secondary mt-2">${a.date}</div>
-            <div class="d-flex gap-2 mt-2"><button class="btn-outline-sm">Voir profil</button><button class="btn-navy">Contacter</button></div>
-          </div>
-        `).join('')}
-      `;
+        <div class="row g-3">
+          ${filtered.map(function(p) {
+            var role      = getRoleLabel(p);
+            var roleClass = getRoleClass(role);
+            var comps     = (p.competences||[]).slice(0,4).map(function(c){
+              return '<span class="pill">' + c + '</span>';
+            }).join('');
+            return `
+              <div class="col-6">
+                <div class="carte-profil p-3">
+                  <div class="d-flex align-items-center gap-2 mb-2">
+                    <div class="avatar" style="background:${p.couleur};width:40px;height:40px">${p.initiales}</div>
+                    <div class="flex-grow-1">
+                      <div class="fw-semibold text-dark">${p.nom}</div>
+                      <div class="small text-secondary">${p.filiere} · ${p.niveau||''}</div>
+                    </div>
+                    <span class="${roleClass}">${role}</span>
+                  </div>
+                  ${p.bio ? '<div class="small text-secondary mb-2">' + p.bio.substring(0,90) + (p.bio.length>90?'…':'') + '</div>' : ''}
+                  <div class="mb-2">${comps}</div>
+                  <div class="d-flex gap-2 mt-2">
+                    <a href="/utilisateur/${p.id}" class="btn-outline-sm">Voir profil</a>
+                    <button class="btn-navy" onclick="contacter(${p.id})">Contacter</button>
+                  </div>
+                </div>
+              </div>`;
+          }).join('')}
+        </div>`;
+
+      // Re-synchroniser les filtres après injection HTML
+      setTimeout(function() {
+        var rf = document.getElementById('roleFilter');
+        var ff = document.getElementById('filiereFilter');
+        if (rf) rf.value = roleFilter;
+        if (ff) ff.value = filiereFilter;
+      }, 0);
+
+    } else {
+      // Onglet Offres
+      var filtered = annonces.filter(function(a) {
+        var matchSearch = !searchText
+          || (a.titre||'').toLowerCase().includes(searchText)
+          || (a.auteur||'').toLowerCase().includes(searchText)
+          || (a.filiere||'').toLowerCase().includes(searchText)
+          || (a.competences||[]).some(function(c){ return c.toLowerCase().includes(searchText); });
+        var matchType = currentFilter === 'all' || a.type === currentFilter;
+        return matchSearch && matchType;
+      });
+
+      container.innerHTML = `
+        <div class="d-flex gap-2 align-items-center mb-3 flex-wrap">
+          <button class="filter-btn ${currentFilter==='all'?'actif':''}"    onclick="filterAnnonces('all')">Tout</button>
+          <button class="filter-btn ${currentFilter==='offre'?'actif':''}"  onclick="filterAnnonces('offre')">Offres</button>
+          <button class="filter-btn ${currentFilter==='demande'?'actif':''}" onclick="filterAnnonces('demande')">Demandes</button>
+          <span class="small text-secondary ms-3">${filtered.length} annonce(s)</span>
+        </div>
+        ${filtered.map(function(a) {
+          var comps = (a.competences||[]).map(function(c){
+            return '<span class="pill">' + c + '</span>';
+          }).join('');
+          return `
+            <div class="carte-offre p-3 mb-3">
+              <div class="d-flex align-items-start gap-2 mb-2 flex-wrap">
+                <div class="avatar" style="background:${a.couleur};width:40px;height:40px">${a.initiales}</div>
+                <div class="flex-grow-1">
+                  <div class="fw-semibold text-dark">${a.titre}</div>
+                  <div class="small text-secondary">par ${a.auteur} · ${a.filiere}</div>
+                </div>
+                <span class="${a.type==='offre'?'bo':'bd'}">${a.type==='offre'?'Offre':'Demande'}</span>
+              </div>
+              ${a.description ? '<div class="small text-secondary mb-2">' + a.description + '</div>' : ''}
+              <div class="mb-2">${comps}</div>
+              ${a.format ? '<div class="small text-secondary mb-2">Format : <strong>' + a.format + '</strong></div>' : ''}
+              <div class="d-flex gap-2 mt-2">
+                <a href="/utilisateur/${a.id_utilisateur}" class="btn-outline-sm">Voir profil</a>
+                <button class="btn-navy" onclick="contacter(${a.id_utilisateur})">Contacter</button>
+              </div>
+            </div>`;
+        }).join('')}`;
     }
   }
-  
+
   displayContent();
 </script>
 {% endblock %}

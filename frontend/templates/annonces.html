@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+
+{% block titre %}Annonces{% endblock %}
+
+{% block content %}
+<h2 class="page-titre">Annonces</h2>
+<p class="page-sub">Trouvez un mentor ou proposez votre aide selon vos matières.</p>
+
+<!-- ── Filtres ── -->
+<div class="carte-pp p-3 mb-4">
+  <form method="GET" action="/annonces" class="row g-2 align-items-end">
+    <div class="col-auto">
+      <label class="form-label small fw-semibold">Matière</label>
+      <select name="matiere" class="form-select form-select-sm">
+        <option value="">Toutes</option>
+        {% for m in matieres %}
+          <option value="{{ m['id_matiere'] }}" {% if matiere == m['id_matiere']|string %}selected{% endif %}>
+            {{ m['nom_matiere'] }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label small fw-semibold">Format</label>
+      <select name="format_session" class="form-select form-select-sm">
+        <option value="">Tous</option>
+        <option value="présentiel" {% if format_session == 'présentiel' %}selected{% endif %}>Présentiel</option>
+        <option value="en_ligne"   {% if format_session == 'en_ligne'   %}selected{% endif %}>En ligne</option>
+        <option value="les_deux"   {% if format_session == 'les_deux'   %}selected{% endif %}>Les deux</option>
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label small fw-semibold">Type</label>
+      <select name="type_annonce" class="form-select form-select-sm">
+        <option value="">Tous</option>
+        <option value="offre"   {% if type_annonce == 'offre'   %}selected{% endif %}>Offres</option>
+        <option value="demande" {% if type_annonce == 'demande' %}selected{% endif %}>Demandes</option>
+      </select>
+    </div>
+    <div class="col-auto">
+      <label class="form-label small fw-semibold">Dispo</label>
+      <select name="dispo" class="form-select form-select-sm">
+        <option value="">Toutes</option>
+        {% for d in dispos %}
+          <option value="{{ d['id_dispo'] }}" {% if id_dispo == d['id_dispo']|string %}selected{% endif %}>
+            {{ d['jour'] }} {{ d['heure_debut'] }}-{{ d['heure_fin'] }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-auto d-flex gap-2">
+      <button type="submit" class="btn-navy">Filtrer</button>
+      <a href="/annonces" class="btn-outline-sm">Réinitialiser</a>
+    </div>
+  </form>
+</div>
+
+<!-- ── Créer une annonce ── -->
+<div class="carte-pp p-3 mb-4">
+  <div class="fw-bold text-dark mb-3">➕ Publier une annonce</div>
+  <form method="POST" action="/annonces/new">
+    <div class="row g-2 mb-3">
+      <div class="col-auto">
+        <select name="type_annonce" class="form-select form-select-sm" required>
+          <option value="">-- Type --</option>
+          <option value="offre">Offre de mentorat</option>
+          <option value="demande">Demande de mentorat</option>
+        </select>
+      </div>
+      <div class="col-auto">
+        <select name="format_session" class="form-select form-select-sm" required>
+          <option value="">-- Format --</option>
+          <option value="présentiel">Présentiel</option>
+          <option value="en_ligne">En ligne</option>
+          <option value="les_deux">Les deux</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="row g-3 mb-3">
+      <div class="col-6">
+        <label class="form-label small fw-semibold">Matières concernées</label>
+        <div class="d-flex flex-wrap gap-1 p-2 border rounded" style="max-height:120px;overflow-y:auto">
+          {% for m in matieres %}
+          <label class="d-flex align-items-center gap-1 small border rounded px-2 py-1" style="cursor:pointer">
+            <input type="checkbox" name="matieres" value="{{ m['id_matiere'] }}">
+            {{ m['nom_matiere'] }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="col-6">
+        <label class="form-label small fw-semibold">Disponibilités proposées</label>
+        <div class="d-flex flex-wrap gap-1 p-2 border rounded" style="max-height:120px;overflow-y:auto">
+          {% for d in dispos %}
+          <label class="d-flex align-items-center gap-1 small border rounded px-2 py-1" style="cursor:pointer">
+            <input type="checkbox" name="disponibilites" value="{{ d['id_dispo'] }}">
+            {{ d['jour'] }} {{ d['heure_debut'] }}-{{ d['heure_fin'] }}
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <textarea name="description_perso" class="form-control form-control-sm" rows="2"
+                placeholder="Décrivez votre offre ou votre besoin…"></textarea>
+    </div>
+    <button type="submit" class="btn-navy">Publier</button>
+  </form>
+</div>
+
+<!-- ── Liste annonces ── -->
+<div class="fw-bold text-dark mb-3">
+  Annonces disponibles
+  <span class="bb ms-2">{{ annonces|length }} résultat{% if annonces|length > 1 %}s{% endif %}</span>
+</div>
+
+{% if annonces %}
+  {% set couleurs = ['#7c3aed','#2ecc71','#e67e22','#3498db','#e74c3c','#1abc9c'] %}
+  {% for a in annonces %}
+  {% set couleur = couleurs[loop.index0 % couleurs|length] %}
+  <div class="carte-offre p-3 mb-3">
+    <div class="d-flex align-items-start gap-3 flex-wrap">
+      <div class="avatar" style="background:{{ couleur }};width:42px;height:42px">
+        {{ (a['nom'][0] + a['prenom'][0]).upper() if a['nom'] and a['prenom'] else '?' }}
+      </div>
+      <div class="flex-grow-1">
+        <div class="d-flex align-items-center gap-2 flex-wrap mb-1">
+          <a href="/utilisateur/{{ a['id_utilisateur'] }}" class="fw-semibold text-dark text-decoration-none">
+            {{ a['prenom'] }} {{ a['nom'] }}
+          </a>
+          <span class="bb">{{ a['filiere'] }} · {{ a['niveau'] }}</span>
+          <span class="{{ 'bo' if a['type_annonce'] == 'offre' else 'bd' }} ms-auto">
+            {{ 'Offre de mentorat' if a['type_annonce'] == 'offre' else 'Demande de mentorat' }}
+          </span>
+        </div>
+
+        <div class="small text-secondary mb-2">
+          {% if a['description_perso'] %}{{ a['description_perso'] }}{% endif %}
+        </div>
+
+        {% if a['matieres_annonce'] %}
+        <div class="mb-2">
+          {% for m in a['matieres_annonce'].split(', ') %}
+          <span class="pill">{{ m }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if a['dispos_annonce'] %}
+        <div class="small text-secondary mb-2">📅 {{ a['dispos_annonce'] }}</div>
+        {% endif %}
+
+        <div class="small text-secondary mb-2">
+          Format : <strong>{{ a['format_session'] }}</strong> ·
+          {{ a['date_creation'].strftime('%d/%m/%Y') if a['date_creation'] else '' }}
+        </div>
+
+        <!-- Actions -->
+        <div class="d-flex gap-2 flex-wrap">
+          <a href="/utilisateur/{{ a['id_utilisateur'] }}" class="btn-outline-sm">Voir profil</a>
+
+          {% if a['id_utilisateur'] != user.id %}
+            {% if a['id_annonce'] not in deja_repondu %}
+            <!-- Bouton Contacter → ouvre messagerie directement -->
+            <form method="POST" action="/messagerie/contacter/{{ a['id_utilisateur'] }}" class="d-inline">
+              <input type="hidden" name="message_accomp"
+                     value="Bonjour, j'ai vu votre annonce &quot;{{ a['type_annonce'] }}&quot; et je voudrais échanger avec vous.">
+              <button type="submit" class="btn-navy">Contacter</button>
+            </form>
+
+            <!-- Formulaire réponse avec message personnalisé -->
+            <button class="btn-outline-sm" onclick="toggleReponse({{ a['id_annonce'] }})">Répondre avec message</button>
+            {% else %}
+            <span class="bv">✓ Déjà répondu</span>
+            {% endif %}
+          {% endif %}
+        </div>
+
+        <!-- Formulaire réponse dépliable -->
+        {% if a['id_utilisateur'] != user.id and a['id_annonce'] not in deja_repondu %}
+        <div id="rep-{{ a['id_annonce'] }}" style="display:none;margin-top:10px">
+          <form method="POST" action="/annonces/repondre" class="d-flex gap-2">
+            <input type="hidden" name="id_annonce" value="{{ a['id_annonce'] }}">
+            <textarea name="message_accomp" class="form-control form-control-sm" rows="2"
+                      placeholder="Votre message…" style="flex:1"></textarea>
+            <button type="submit" class="btn-navy align-self-end">Envoyer</button>
+          </form>
+        </div>
+        {% endif %}
+
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+{% elif mes_lacunes or mes_competences %}
+  <div class="carte-pp p-4 text-center text-secondary">
+    <div class="fs-3 mb-2">🔍</div>
+    Aucune annonce ne correspond à votre profil pour le moment.
+  </div>
+{% else %}
+  <div class="carte-pp p-4 text-center text-secondary">
+    <div class="fs-3 mb-2">📝</div>
+    Complétez votre profil avec vos matières pour voir les annonces correspondantes.<br>
+    <a href="/profil" class="btn-navy mt-3 d-inline-block">Compléter mon profil</a>
+  </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function toggleReponse(id) {
+  var el = document.getElementById('rep-' + id);
+  if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+{% endblock %}

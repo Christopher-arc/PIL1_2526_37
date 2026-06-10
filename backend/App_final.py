@@ -1,11 +1,10 @@
 """
-IFRI MentorLink - Application Flask FINALE V3
-Intègre SocketIO d'Elvina pour messagerie temps réel
-COMPLETEMENT PRÊTE POUR PRODUCTION
-
-Auteurs: Aimé-José (lead) + Rajwane + Prince + José + Dossou + Elvina
-Version: FINALE V3 - 100% Complète avec SocketIO
-Date: 9 juin 2026
+IFRI MentorLink - Application Flask FINALE V3 (CORRIGÉE)
+Corrections :
+  - Import blueprints depuis routes/ ET racine (messagerie)
+  - Route / → /dashboard
+  - Route /dashboard avec login_required
+  - Context processor global → user dispo dans TOUS les templates
 """
 
 import os
@@ -15,51 +14,44 @@ from functools import wraps
 from db import init_db, mysql
 
 # ============================================================================
-# 1. INITIALISATION FLASK + SOCKETIO
+# 1. INITIALISATION
 # ============================================================================
 app = Flask(
     __name__,
     template_folder=os.path.join(os.path.dirname(__file__), '..', 'frontend', 'templates'),
-    static_folder=os.path.join(os.path.dirname(__file__),  '..', 'frontend', 'statics')
+    static_folder=os.path.join(os.path.dirname(__file__),   '..', 'frontend', 'statics'),
+    static_url_path='/statics'
 )
 
 app.secret_key = 'mentorlink_secret_2026'
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
 
-# Initialiser Socket.IO
 socketio = SocketIO(app, cors_allowed_origins="*")
-
 init_db(app)
-
-# ============================================================================
-# 2. CONFIGURATION UPLOADS
-# ============================================================================
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'statics', 'photos')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # ============================================================================
-# 3. IMPORT DES BLUEPRINTS (Routes modularisées)
+# 2. BLUEPRINTS
 # ============================================================================
-
 from routes.auth     import auth_bp
 from routes.profil   import profil_bp
 from routes.annonces import annonces_bp
-from messagerie import messagerie_bp, register_socketio_events
+from messagerie      import messagerie_bp, register_socketio_events
+
 app.register_blueprint(auth_bp)
 app.register_blueprint(profil_bp)
 app.register_blueprint(annonces_bp)
 app.register_blueprint(messagerie_bp)
 
-# Initialiser les événements SocketIO
 register_socketio_events(socketio)
 
 # ============================================================================
-# 4. DÉCORATEUR: Vérifier authentification
+# 3. HELPERS
 # ============================================================================
 
 def login_required(f):
-    """Décorateur pour protéger les routes qui nécessitent une authentification."""
     @wraps(f)
     def decorated_function(*args, **kwargs):
         if 'id' not in session:
@@ -70,36 +62,44 @@ def login_required(f):
 
 
 def build_user_context(utilisateur):
-    """
-    Construire un objet 'user' complet à passer aux templates.
-    Cet objet contient toutes les variables que base.html expect.
-    """
     if not utilisateur:
-        return {
-            'id': None,
-            'initiales': '?',
-            'nom': 'Utilisateur',
-            'prenom': '',
-            'filiere': '',
-            'niveau': '',
-            'email': '',
-            'bio': '',
-            'photo': '',
-        }
-    
+        return {'id': None, 'initiales': '?', 'nom': 'Utilisateur',
+                'prenom': '', 'filiere': '', 'niveau': '', 'email': ''}
     initiales = (utilisateur['nom'][0] + utilisateur['prenom'][0]).upper()
-    
     return {
-        'id': utilisateur['id_utilisateur'],
+        'id':        utilisateur['id_utilisateur'],
         'initiales': initiales,
-        'nom': f"{utilisateur['prenom']} {utilisateur['nom']}",
-        'prenom': utilisateur['prenom'],
-        'filiere': utilisateur['filiere'],
-        'niveau': utilisateur['niveau'],
-        'email': utilisateur['email'],
-        'bio': utilisateur.get('Bio', ''),
-        'photo': utilisateur.get('photo', ''),
+        'nom':       f"{utilisateur['prenom']} {utilisateur['nom']}",
+        'prenom':    utilisateur['prenom'],
+        'filiere':   utilisateur['filiere'],
+        'niveau':    utilisateur['niveau'],
+        'email':     utilisateur['email'],
+        'bio':       utilisateur.get('Bio', ''),
+        'photo':     utilisateur.get('photo', ''),
     }
+
+
+def get_current_user():
+    """Retourne (utilisateur_dict, user_context) pour l'utilisateur connecté."""
+    if 'id' not in session:
+        return None, None
+    cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM Utilisateurs WHERE id_utilisateur = %s", (session['id'],))
+    utilisateur = cur.fetchone()
+    cur.close()
+    return utilisateur, build_user_context(utilisateur)
+
+
+# ============================================================================
+# 4. CONTEXT PROCESSOR GLOBAL
+# ============================================================================
+# Injecte automatiquement `user` dans TOUS les templates (base.html inclus)
+# Plus besoin de passer user= dans chaque render_template des blueprints.
+
+@app.context_processor
+def inject_user():
+    _, user_context = get_current_user()
+    return dict(user=user_context)
 
 
 # ============================================================================
@@ -108,81 +108,151 @@ def build_user_context(utilisateur):
 
 @app.route('/')
 def home():
-    """Route d'accueil - redirige vers inscription si pas connecté."""
     if 'id' in session:
         return redirect(url_for('dashboard'))
-    return redirect(url_for('auth.inscription'))
+    return redirect(url_for('auth.connexion'))
 
 
 @app.route('/test')
 def test():
-    """Route de test pour vérifier que l'app est up."""
-    return "✅ IFRI MentorLink is running perfectly with SocketIO . Dieu est grand"
+    return "✅ IFRI MentorLink is running. Dieu est grand"
 
 
 # ============================================================================
-# 6. ROUTE MATCHING - Algorithme d'appairage (José)
+# 6. DASHBOARD
+# ============================================================================
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    user_id = session['id']
+    utilisateur, user_context = get_current_user()
+
+    cur = mysql.connection.cursor()
+
+    # Matchs (sessions réalisées)
+    cur.execute("""
+        SELECT COUNT(*) as n FROM Matching
+        WHERE id_mentor = %s OR id_mentore = %s
+    """, (user_id, user_id))
+    nb_sessions = cur.fetchone()['n']
+
+    # Compétences
+    cur.execute("SELECT COUNT(*) as n FROM MAITRISE WHERE id_utilisateur = %s", (user_id,))
+    nb_comp = cur.fetchone()['n']
+
+    # Annonces publiées
+    cur.execute("SELECT COUNT(*) as n FROM Annonces WHERE id_utilisateur = %s", (user_id,))
+    nb_offres = cur.fetchone()['n']
+
+    # Notifications non lues
+    nb_notifs = 0
+    try:
+        cur.execute("SELECT COUNT(*) as n FROM Notifications WHERE id_utilisateur = %s AND lu = FALSE", (user_id,))
+        nb_notifs = cur.fetchone()['n']
+    except Exception:
+        pass
+
+    stats = {
+        'sessions':         nb_sessions,
+        'competences':      nb_comp,
+        'messages_non_lus': nb_notifs,
+        'mes_offres':       nb_offres,
+    }
+
+    # Offres récentes
+    cur.execute("""
+        SELECT a.id_annonce, a.type_annonce, a.description_perso, u.nom, u.prenom
+        FROM Annonces a
+        JOIN Utilisateurs u ON a.id_utilisateur = u.id_utilisateur
+        WHERE a.statut = 'actif' AND a.id_utilisateur != %s
+        ORDER BY a.date_creation DESC LIMIT 3
+    """, (user_id,))
+    raw_offres = cur.fetchall()
+    offres_recentes = [{
+        'titre':      (o['description_perso'] or o['type_annonce'])[:45],
+        'auteur':     f"{o['prenom']} {o['nom']}",
+        'type':       o['type_annonce'],
+        'type_class': 'bo' if o['type_annonce'] == 'offre' else 'bd',
+    } for o in raw_offres]
+
+    cur.close()
+
+    # Meilleurs matchs depuis l'algorithme
+    from matching import trouver_mentors
+    couleurs = ['#7c3aed', '#2ecc71', '#e67e22', '#3498db', '#e74c3c']
+    bruts = trouver_mentors(user_id, mysql)
+    meilleurs_matchs = []
+    for i, m in enumerate(bruts[:5]):
+        total = round(m['score_matieres'] * 4.5 + m['score_dispos'] * 4.0 + m['score_filiere'] * 1.5)
+        meilleurs_matchs.append({
+            'nom':          f"{m['prenom']} {m['nom']}",
+            'initiales':    (m['nom'][0] + m['prenom'][0]).upper(),
+            'filiere':      m['filiere'],
+            'niveau':       m['niveau'],
+            'score':        total,
+            'couleur':      couleurs[i % len(couleurs)],
+            'badge_classe': 'bv',
+            'badge_texte':  'Mentor recommandé',
+        })
+
+    return render_template(
+        'dashboard.html',
+        stats=stats,
+        meilleurs_matchs=meilleurs_matchs,
+        offres_recentes=offres_recentes,
+        active='dashboard'
+    )
+
+
+# ============================================================================
+# 7. MATCHING
 # ============================================================================
 
 @app.route('/matching')
 @login_required
 def matching():
-    """
-    Route /matching - Affiche les mentors recommandés pour l'utilisateur connecté.
-    
-    Utilise l'algorithme matching.py de José.
-    Convertit les scores (0-10) en scores template (0-100) pour Prince.
-    """
     from matching import trouver_mentors
-    
-    # Récupérer les paramètres GET (filtres)
-    matching_filter = request.args.get('filter', 'all')  # all | mentor | mentore
-    min_score = int(request.args.get('min', 0))
-    
-    # Appeler l'algorithme
-    user_id = session['id']
-    bruts = trouver_mentors(user_id, mysql)  # Retourne liste de dicts, scores /10
-    
-    # Convertir scores pour le template de Prince (sur 100)
+
+    matching_filter = request.args.get('filter', 'all')
+    min_score       = int(request.args.get('min', 0))
+    user_id         = session['id']
+
+    bruts = trouver_mentors(user_id, mysql)
+
     couleurs = ['#7c3aed', '#2ecc71', '#e67e22', '#3498db', '#e74c3c',
                 '#1abc9c', '#9b59b6', '#f39c12', '#16a085', '#c0392b']
     matching_data = []
-    
+
     for i, m in enumerate(bruts):
-        # Conversion scores /10 → points selon échelle du template
-        competences_pts = round(m['score_matieres'] * 4.5)   # sur 45
-        dispo_pts = round(m['score_dispos'] * 4.0)           # sur 40
-        filiere_pts = round(m['score_filiere'] * 1.5)        # sur 15
-        total = competences_pts + dispo_pts + filiere_pts     # sur 100
-        
-        # Appliquer filtres
+        competences_pts = round(m['score_matieres'] * 4.5)
+        dispo_pts       = round(m['score_dispos']   * 4.0)
+        filiere_pts     = round(m['score_filiere']  * 1.5)
+        total           = competences_pts + dispo_pts + filiere_pts
+
         if total < min_score:
             continue
-        
+        if matching_filter == 'mentor' and m.get('role', 'mentor') != 'mentor':
+            continue
+        if matching_filter == 'mentore' and m.get('role', 'mentor') != 'mentore':
+            continue
+
         matching_data.append({
-            'id_mentor': m['id_mentor'],
-            'nom': f"{m['prenom']} {m['nom']}",
-            'initiales': (m['nom'][0] + m['prenom'][0]).upper(),
-            'filiere': m['filiere'],
-            'niveau': m['niveau'],
-            'role': 'mentor',
-            'competences': competences_pts,    # /45
-            'dispo_score': dispo_pts,          # /40
-            'filiere_score': filiere_pts,      # /15
-            'total': total,                    # /100
-            'couleur': couleurs[i % len(couleurs)],
+            'id_mentor':     m['id_mentor'],
+            'nom':           f"{m['prenom']} {m['nom']}",
+            'initiales':     (m['nom'][0] + m['prenom'][0]).upper(),
+            'filiere':       m['filiere'],
+            'niveau':        m['niveau'],
+            'role':          'mentor',
+            'competences':   competences_pts,
+            'dispo_score':   dispo_pts,
+            'filiere_score': filiere_pts,
+            'total':         total,
+            'couleur':       couleurs[i % len(couleurs)],
         })
-    
-    # Récupérer infos utilisateur pour base.html
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM Utilisateurs WHERE id_utilisateur = %s", (user_id,))
-    utilisateur = cur.fetchone()
-    cur.close()
-    user_context = build_user_context(utilisateur)
-    
+
     return render_template(
         'matching.html',
-        user=user_context,
         matching_data=matching_data,
         matching_filter=matching_filter,
         min_score=min_score,
@@ -191,137 +261,88 @@ def matching():
 
 
 # ============================================================================
-# 7. ROUTE DASHBOARD - Tableau de bord utilisateur
-# ============================================================================
-
-@app.route('/dashboard')
-@login_required
-def dashboard():
-    """
-    Route /dashboard - Affiche le tableau de bord avec:
-    - Statistiques utilisateur
-    - Matchs actifs
-    - Offres récentes
-    - Messages non lus
-    """
-    user_id = session['id']
-    cur = mysql.connection.cursor()
-    
-    # Récupérer infos utilisateur
-    cur.execute("SELECT * FROM Utilisateurs WHERE id_utilisateur = %s", (user_id,))
-    utilisateur = cur.fetchone()
-    user_context = build_user_context(utilisateur)
-    
-    # Récupérer les matchs actifs
-    cur.execute("""
-        SELECT m.*, 
-               u1.nom as mentor_nom, u1.prenom as mentor_prenom, u1.filiere as mentor_filiere,
-               u2.nom as mentore_nom, u2.prenom as mentore_prenom, u2.filiere as mentore_filiere
-        FROM Matching m
-        JOIN Utilisateurs u1 ON m.id_mentor = u1.id_utilisateur
-        JOIN Utilisateurs u2 ON m.id_mentore = u2.id_utilisateur
-        WHERE (m.id_mentor = %s OR m.id_mentore = %s)
-        LIMIT 5
-    """, (user_id, user_id))
-    matches = cur.fetchall()
-    
-    # Récupérer les annonces actives
-    cur.execute("""
-        SELECT a.*, u.nom, u.prenom, u.filiere
-        FROM Annonces a
-        JOIN Utilisateurs u ON a.id_utilisateur = u.id_utilisateur
-        WHERE a.statut = 'actif' AND a.id_utilisateur != %s
-        LIMIT 5
-    """, (user_id,))
-    offres = cur.fetchall()
-    
-    # Récupérer les notifications non lues
-    cur.execute("""
-        SELECT * FROM Notifications
-        WHERE id_utilisateur = %s AND lu = FALSE
-        LIMIT 3
-    """, (user_id,))
-    notifications = cur.fetchall()
-    
-    cur.close()
-    
-    # Statistiques
-    stats = {
-        'sessions': 3,
-        'competences': 5,
-        'messages_non_lus': len(notifications),
-        'mes_offres': 0,
-    }
-    
-    return render_template(
-        'dashboard.html',
-        user=user_context,
-        stats=stats,
-        matches=matches,
-        offres=offres,
-        notifications=notifications,
-        active='dashboard'
-    )
-
-
-# ============================================================================
-# 8. ROUTE EXPLORER - Explorer les annonces
+# 8. EXPLORER
 # ============================================================================
 
 @app.route('/explorer')
 @login_required
 def explorer():
-    """
-    Route /explorer - Permet aux utilisateurs d'explorer et filtrer les annonces.
-    """
     user_id = session['id']
-    
-    # Récupérer infos utilisateur
+
     cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM Utilisateurs WHERE id_utilisateur = %s", (user_id,))
-    utilisateur = cur.fetchone()
-    user_context = build_user_context(utilisateur)
-    
-    # Récupérer les matieres et disponibilités pour les filtres
+
+    def td_str(td):
+        if td is None: return ''
+        if hasattr(td, 'total_seconds'):
+            t = int(td.total_seconds())
+            return f"{t//3600:02d}:{(t%3600)//60:02d}:00"
+        return str(td)
+
     cur.execute("SELECT * FROM `Matieres`")
     matieres = cur.fetchall()
-    
+
     cur.execute("SELECT * FROM `Disponibilites`")
-    dispos = cur.fetchall()
-    
-    # Récupérer les besoins/compétences de l'utilisateur
-    cur.execute("SELECT id_matiere FROM BESOIN WHERE id_utilisateur = %s", (user_id,))
+    dispos = [{'id_dispo': d['id_dispo'], 'jour': d['jour'],
+               'heure_debut': td_str(d['heure_debut']), 'heure_fin': td_str(d['heure_fin'])}
+              for d in cur.fetchall()]
+
+    cur.execute("SELECT id_matiere FROM BESOIN WHERE id_utilisateur = %s",   (user_id,))
     mes_lacunes = [r['id_matiere'] for r in cur.fetchall()]
-    
+
     cur.execute("SELECT id_matiere FROM MAITRISE WHERE id_utilisateur = %s", (user_id,))
     mes_competences = [r['id_matiere'] for r in cur.fetchall()]
-    
-    # Récupérer les annonces filtrées
-    annonces_pertinentes = []
-    if mes_lacunes or mes_competences:
-        query = """
-            SELECT a.*,
-                   u.nom, u.prenom, u.filiere, u.niveau, u.photo,
-                   GROUP_CONCAT(DISTINCT m.nom_matiere ORDER BY m.nom_matiere SEPARATOR ', ') AS matieres_annonce
-            FROM Annonces a
-            JOIN Utilisateurs u ON a.id_utilisateur = u.id_utilisateur
-            LEFT JOIN ANNONCE_MATIERE am ON a.id_annonce = am.id_annonce
-            LEFT JOIN `Matieres` m ON am.id_matiere = m.id_matiere
-            WHERE a.statut = 'actif'
-            AND a.id_utilisateur != %s
-            GROUP BY a.id_annonce
-            ORDER BY a.date_creation DESC
-            LIMIT 20
-        """
-        cur.execute(query, (user_id,))
-        annonces_pertinentes = cur.fetchall()
-    
+
+    # Annonces (toutes actives, pas les siennes)
+    cur.execute("""
+        SELECT a.*, u.nom, u.prenom, u.filiere, u.niveau, u.photo,
+               a.id_utilisateur,
+               GROUP_CONCAT(DISTINCT m.nom_matiere ORDER BY m.nom_matiere SEPARATOR ', ') AS matieres_annonce
+        FROM Annonces a
+        JOIN Utilisateurs u ON a.id_utilisateur = u.id_utilisateur
+        LEFT JOIN ANNONCE_MATIERE am ON a.id_annonce = am.id_annonce
+        LEFT JOIN `Matieres` m ON am.id_matiere = m.id_matiere
+        WHERE a.statut = 'actif' AND a.id_utilisateur != %s
+        GROUP BY a.id_annonce
+        ORDER BY a.date_creation DESC LIMIT 30
+    """, (user_id,))
+    annonces_pertinentes = cur.fetchall()
+
+    # Profils des autres utilisateurs
+    cur.execute("""
+        SELECT u.id_utilisateur, u.nom, u.prenom, u.filiere, u.niveau, u.Bio,
+               GROUP_CONCAT(DISTINCT m.nom_matiere SEPARATOR ', ') AS competences_str
+        FROM Utilisateurs u
+        LEFT JOIN MAITRISE ma ON u.id_utilisateur = ma.id_utilisateur
+        LEFT JOIN `Matieres` m ON ma.id_matiere = m.id_matiere
+        WHERE u.id_utilisateur != %s
+        GROUP BY u.id_utilisateur
+        LIMIT 40
+    """, (user_id,))
+    raw_profils = cur.fetchall()
     cur.close()
-    
+
+    couleurs = ['#7c3aed','#2ecc71','#e67e22','#3498db','#e74c3c',
+                '#1abc9c','#9b59b6','#f39c12','#16a085','#c0392b']
+    profils = []
+    for i, p in enumerate(raw_profils):
+        comps = p['competences_str'].split(', ') if p['competences_str'] else []
+        profils.append({
+            'id':          p['id_utilisateur'],
+            'nom':         f"{p['prenom']} {p['nom']}",
+            'initiales':   (p['nom'][0] + p['prenom'][0]).upper(),
+            'filiere':     p['filiere'] or '',
+            'niveau':      p['niveau']  or '',
+            'bio':         p['Bio']     or '',
+            'competences': comps,
+            'couleur':     couleurs[i % len(couleurs)],
+            'note':        4.5,
+            'sessions':    0,
+        })
+
     return render_template(
         'explorer.html',
-        user=user_context,
         annonces=annonces_pertinentes,
+        profils=profils,
         matieres=matieres,
         dispos=dispos,
         mes_lacunes=mes_lacunes,
@@ -335,22 +356,17 @@ def explorer():
 # ============================================================================
 
 @app.errorhandler(404)
-def page_not_found(error):
-    """Page 404."""
-    return render_template('404.html'), 404 if os.path.exists(
-        os.path.join(app.template_folder, '404.html')) else "Page non trouvée", 404
-
+def page_not_found(e):
+    return "Page non trouvée – <a href='/dashboard'>Retour</a>", 404
 
 @app.errorhandler(500)
-def internal_error(error):
-    """Page 500."""
-    return render_template('500.html'), 500 if os.path.exists(
-        os.path.join(app.template_folder, '500.html')) else "Erreur serveur", 500
+def internal_error(e):
+    return "Erreur serveur", 500
 
 
 # ============================================================================
 # 10. DÉMARRAGE
 # ============================================================================
+
 if __name__ == '__main__':
-    # Avec SocketIO pour support temps réel
     socketio.run(app, debug=True, port=8080, host='0.0.0.0', allow_unsafe_werkzeug=True)

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+
+{% block titre %}Profil de {{ utilisateur['prenom'] }} {{ utilisateur['nom'] }}{% endblock %}
+
+{% block content %}
+<div class="mb-3">
+  <a href="javascript:history.back()" class="btn-outline-sm">← Retour</a>
+</div>
+
+<!-- Carte principale -->
+<div class="carte-pp p-4 mb-3">
+  <div class="d-flex align-items-center gap-3 flex-wrap">
+    {% if utilisateur['photo'] %}
+      <img src="/statics/photos/{{ utilisateur['photo'] }}" width="60" height="60"
+           style="border-radius:50%;object-fit:cover;flex-shrink:0">
+    {% else %}
+      <div class="grand-avatar" style="background:#1a2f54">
+        {{ (utilisateur['nom'][0] + utilisateur['prenom'][0]).upper() if utilisateur['nom'] and utilisateur['prenom'] else '?' }}
+      </div>
+    {% endif %}
+    <div class="flex-grow-1">
+      <div class="fs-5 fw-bold text-dark">{{ utilisateur['prenom'] }} {{ utilisateur['nom'] }}</div>
+      <div class="mb-1">
+        <span class="bb me-1">{{ utilisateur['filiere'] }}</span>
+        <span class="bb">{{ utilisateur['niveau'] }}</span>
+      </div>
+      <div class="small text-secondary">{{ utilisateur['email'] }}</div>
+      {% if utilisateur['telephone'] %}
+      <div class="small text-secondary">📞 {{ utilisateur['telephone'] }}</div>
+      {% endif %}
+    </div>
+    <!-- Bouton contacter -->
+    {% if utilisateur['id_utilisateur'] != user.id %}
+    <form method="POST" action="/messagerie/contacter/{{ utilisateur['id_utilisateur'] }}">
+      <button type="submit" class="btn-navy">✉ Contacter</button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if utilisateur['Bio'] %}
+  <div class="mt-3 pt-3" style="border-top:1px solid #dde3ef">
+    <div class="small fw-semibold text-dark mb-1">À propos</div>
+    <p class="small text-secondary mb-0">{{ utilisateur['Bio'] }}</p>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  <!-- Points forts -->
+  <div class="col-6">
+    <div class="carte-pp p-3 h-100">
+      <div class="fw-bold text-dark mb-2">💪 Points forts</div>
+      {% if points_forts %}
+        {% for m in points_forts %}
+        <span class="pill bv mb-1">{{ m['nom_matiere'] }}</span>
+        {% endfor %}
+      {% else %}
+        <span class="small text-secondary">Non renseignés</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Points faibles -->
+  <div class="col-6">
+    <div class="carte-pp p-3 h-100">
+      <div class="fw-bold text-dark mb-2">📚 Cherche à apprendre</div>
+      {% if points_faibles %}
+        {% for m in points_faibles %}
+        <span class="pill bd mb-1">{{ m['nom_matiere'] }}</span>
+        {% endfor %}
+      {% else %}
+        <span class="small text-secondary">Non renseignés</span>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Disponibilités -->
+  <div class="col-12">
+    <div class="carte-pp p-3">
+      <div class="fw-bold text-dark mb-2">📅 Disponibilités</div>
+      {% if dispos %}
+        <div class="d-flex flex-wrap gap-2">
+          {% for d in dispos %}
+          <span class="pill">
+            {{ d['jour'] }} — {{ d['heure_debut'] }} à {{ d['heure_fin'] }}
+          </span>
+          {% endfor %}
+        </div>
+      {% else %}
+        <span class="small text-secondary">Non renseignées</span>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

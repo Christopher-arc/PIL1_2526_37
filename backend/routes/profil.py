@@ -10,6 +10,31 @@ UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), '..', '..', 'frontend', 
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 
+def timedelta_to_str(td):
+    """Convertit un timedelta MySQL (colonne TIME) en string 'HH:MM:SS'."""
+    if td is None:
+        return ''
+    if hasattr(td, 'total_seconds'):
+        total = int(td.total_seconds())
+        h = total // 3600
+        m = (total % 3600) // 60
+        return f"{h:02d}:{m:02d}:00"
+    return str(td)
+
+
+def normaliser_dispos(dispos_raw):
+    """Convertit une liste de dicts Disponibilites avec timedelta → strings."""
+    result = []
+    for d in dispos_raw:
+        result.append({
+            'id_dispo':    d['id_dispo'],
+            'jour':        d['jour'],
+            'heure_debut': timedelta_to_str(d['heure_debut']),
+            'heure_fin':   timedelta_to_str(d['heure_fin']),
+        })
+    return result
+
+
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
@@ -44,19 +69,33 @@ def profil():
         points_faibles = [r['id_matiere'] for r in cur.fetchall()]
 
         cur.execute("SELECT * FROM `Disponibilites`")
-        dispos = cur.fetchall()
+        dispos = normaliser_dispos(cur.fetchall())
 
         cur.execute("SELECT id_dispo FROM USER_DISPONIBILITE WHERE id_utilisateur = %s", (session['id'],))
         mes_dispos = [r['id_dispo'] for r in cur.fetchall()]
 
         cur.close()
+
+        initiales = (utilisateur['nom'][0] + utilisateur['prenom'][0]).upper() if utilisateur else '?'
+        user_context = {
+            'id': utilisateur['id_utilisateur'],
+            'initiales': initiales,
+            'nom': f"{utilisateur['prenom']} {utilisateur['nom']}",
+            'prenom': utilisateur['prenom'],
+            'filiere': utilisateur['filiere'],
+            'niveau': utilisateur['niveau'],
+            'email': utilisateur['email'],
+        }
+
         return render_template('profil.html',
+                               user=user_context,
                                utilisateur=utilisateur,
                                matieres=matieres,
                                points_forts=points_forts,
                                points_faibles=points_faibles,
                                dispos=dispos,
-                               mes_dispos=mes_dispos)
+                               mes_dispos=mes_dispos,
+                               active='profil')
 
     # ── POST — mise à jour infos de base ─────────────────────
     nom       = request.form.get('nom', '').strip()
@@ -192,6 +231,19 @@ def modifier_mdp():
 @login_required
 def mes_annonces():
     cur = mysql.connection.cursor()
+    cur.execute("SELECT * FROM Utilisateurs WHERE id_utilisateur = %s", (session['id'],))
+    utilisateur = cur.fetchone()
+    initiales = (utilisateur['nom'][0] + utilisateur['prenom'][0]).upper() if utilisateur else '?'
+    user_context = {
+        'id': utilisateur['id_utilisateur'],
+        'initiales': initiales,
+        'nom': f"{utilisateur['prenom']} {utilisateur['nom']}",
+        'prenom': utilisateur['prenom'],
+        'filiere': utilisateur['filiere'],
+        'niveau': utilisateur['niveau'],
+        'email': utilisateur['email'],
+    }
+
     cur.execute("""
         SELECT a.*,
                GROUP_CONCAT(DISTINCT m.nom_matiere SEPARATOR ', ') AS matieres_annonce,
@@ -211,10 +263,10 @@ def mes_annonces():
     matieres = cur.fetchall()
 
     cur.execute("SELECT * FROM `Disponibilites`")
-    dispos = cur.fetchall()
+    dispos = normaliser_dispos(cur.fetchall())
 
     cur.close()
-    return render_template('mes_annonces.html', annonces=annonces, matieres=matieres, dispos=dispos)
+    return render_template('mes_annonces.html', user=user_context, annonces=annonces, matieres=matieres, dispos=dispos, active='profil')
 
 
 # ── Supprimer annonce ─────────────────────────────────────────

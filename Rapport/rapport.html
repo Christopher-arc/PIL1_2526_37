@@ -39,7 +39,7 @@
       <div class="member-card">
         <h4>CRECEL Aimé-José</h4>
         <div class="filiere">Informatique — IA</div>
-        <div class="role"><strong>Rôle :</strong> Coordinateur & Développeur Backend</div>
+        <div class="role"><strong>Rôle :</strong> Coordinateur &amp; Développeur Backend</div>
         <div class="role mt-med">
           <strong>Contribution :</strong>
           <ul>
@@ -64,7 +64,7 @@
             <li>Création du fichier d'héritage global base.html comprenant la barre de navigation latérale fixe et la
               structure responsive</li>
             <li>Uniformisation de l'identité visuelle de la plateforme sur l'ensemble des modules (Dashboard, Explorer,
-              Profil) via Bootstrap</li>
+              Profil, Annonces, Mes Annonces) via Bootstrap</li>
           </ul>
         </div>
       </div>
@@ -105,14 +105,17 @@
         <div class="role mt-med">
           <strong>Contribution :</strong>
           <ul>
-            <li>Création du point d'entrée de l'application (app.py)</li>
+            <li>Création et maintenance du point d'entrée de l'application (App_final.py)</li>
             <li>Mise en place d'une architecture modulaire basée sur les Blueprints de Flask pour séparer les
               fonctionnalités (authentification, profils, annonces)</li>
+            <li>Implémentation du context processor global inject_user() pour injecter automatiquement l'utilisateur
+              connecté dans tous les templates Jinja2</li>
             <li>Gestion des cycles de requêtes et configuration des dossiers de templates et fichiers statiques</li>
             <li>Connexion à la base de données MySQL avec flask-mysqldb</li>
             <li>Routes d'inscription avec hashage du mot de passe (Werkzeug) et de connexion avec session Flask</li>
             <li>Route profil (affichage et modification)</li>
-            <li>Route annonces avec filtres (matière, format) et création/réponse aux annonces</li>
+            <li>Routes annonces avec filtres (matière, format, disponibilité, type) et création/réponse aux annonces</li>
+            <li>Routes Mes Annonces : affichage, création, modification et suppression des annonces personnelles</li>
           </ul>
         </div>
       </div>
@@ -135,21 +138,37 @@
       assurée principalement via WhatsApp et GitHub, était présente mais irrégulière, ce qui a engendré un manque de
       dynamisme au sein du groupe, des retours insuffisants et une coordination perfectible. L'expérience de travail en
       équipe, bien qu'imparfaite sur le plan organisationnel, reste satisfaisante dans l'ensemble et constitue un
-      apprentissage précieux pour de futurs projets collaboratifs.
-      <!-- Conception -->
-    <h2>2. Conception du Projet</h2>
+      apprentissage précieux pour de futurs projets collaboratifs.</p>
 
+    <!-- Conception -->
+    <h2>2. Conception du Projet</h2>
 
     <h3>2.1 Structure du Projet</h3>
     <div class="schema">
       <pre>
 PIL1_2526_37/
 ├── backend/
+│   ├── App_final.py        # Point d'entrée Flask + context processor global
+│   ├── db.py               # Configuration MySQL (flask_mysqldb, DictCursor)
+│   ├── matching.py         # Algorithme de recommandation mentor/mentoré
 │   ├── messagerie.py       # API Flask + WebSocket (SocketIO)
+│   ├── routes/
+│   │   ├── auth.py         # Authentification (inscription, connexion, déconnexion)
+│   │   ├── profil.py       # Affichage et modification du profil
+│   │   └── annonces.py     # Annonces publiques + Mes Annonces (CRUD complet)
 │   ├── requirements.txt    # Dépendances Python
 │   └── .env.example        # Modèle de configuration
 ├── frontend/
-│   └── messagerie.html     # Interface utilisateur de la messagerie
+│   └── templates/
+│       ├── base.html           # Template parent (sidebar, navigation, inject user)
+│       ├── dashboard.html      # Tableau de bord
+│       ├── matching.html       # Page de matching
+│       ├── explorer.html       # Exploration des profils et annonces
+│       ├── annonces.html       # Annonces publiques avec filtres
+│       ├── mes_annonces.html   # Gestion des annonces personnelles
+│       ├── profil.html         # Profil utilisateur
+│       ├── messagerie.html     # Interface de messagerie temps réel
+│       └── voir_profil.html    # Profil public d'un autre utilisateur
 ├── Database/
 │   └── Files.sql           # Schéma SQL + données de test
 ├── Rapport/
@@ -159,12 +178,14 @@ PIL1_2526_37/
 </pre>
     </div>
 
-    <p>Le projet suit une architecture <strong>client-serveur</strong> :</p>
+    <p>Le projet suit une architecture <strong>client-serveur MVC</strong> :</p>
     <ul>
-      <li><strong>Backend (Flask)</strong> : API REST pour les discussions, messages et notifications. Communication
-        temps réel via Flask-SocketIO.</li>
-      <li><strong>Frontend (HTML/JS)</strong> : Interface utilisateur avec Socket.IO client pour la messagerie en
-        direct.</li>
+      <li><strong>Backend (Flask)</strong> : API REST organisée en Blueprints (auth, profil, annonces). Un context
+        processor global injecte l'utilisateur connecté dans tous les templates sans répétition de code.</li>
+      <li><strong>Frontend (Jinja2 / HTML / Bootstrap)</strong> : Système d'héritage de templates centré sur
+        base.html. La sidebar, la navigation et l'avatar utilisateur sont gérés une seule fois.</li>
+      <li><strong>Temps réel (Flask-SocketIO)</strong> : Communication bidirectionnelle pour la messagerie
+        instantanée.</li>
       <li><strong>Base de données (MySQL)</strong> : Stockage des utilisateurs, annonces, messages, notifications et
         matchings.</li>
     </ul>
@@ -243,8 +264,72 @@ PIL1_2526_37/
       annonce, paires mentor/mentoré en double) et des <strong>données de test</strong> (6 utilisateurs, 2 discussions,
       messages, notifications) pour valider le fonctionnement.</p>
 
+    <!-- Corrections techniques -->
+    <h2>3. Corrections et Améliorations Techniques</h2>
+
+    <h3>3.1 Problème : jinja2.exceptions.UndefinedError — 'user' is undefined</h3>
+    <p>
+      Lors de l'accès à la route <code>/mes-annonces</code> (et à d'autres routes des blueprints),
+      Flask levait une erreur <code>UndefinedError: 'user' is undefined</code> car le template
+      <code>base.html</code> utilise <code>{{ user.initiales }}</code>, <code>{{ user.nom }}</code>
+      et <code>{{ user.filiere }}</code> dans la sidebar, mais la variable <code>user</code> n'était
+      pas passée au <code>render_template</code> de chaque route.
+    </p>
+
+    <h3>Solution retenue : Context Processor global</h3>
+    <p>
+      Plutôt que de répéter <code>user=get_current_user()</code> dans chaque appel
+      <code>render_template</code> de tous les blueprints, un <strong>context processor</strong>
+      a été ajouté une seule fois dans <code>App_final.py</code> :
+    </p>
+    <div class="code">
+@app.context_processor<br>
+def inject_user():<br>
+&nbsp;&nbsp;&nbsp;&nbsp;_, user_context = get_current_user()<br>
+&nbsp;&nbsp;&nbsp;&nbsp;return dict(user=user_context)
+    </div>
+    <p>
+      Ce mécanisme Flask injecte automatiquement <code>user</code> dans le contexte de
+      <strong>tous</strong> les templates, y compris ceux rendus depuis les blueprints
+      (<code>annonces.py</code>, <code>profil.py</code>, <code>auth.py</code>, <code>messagerie.py</code>),
+      sans aucune modification dans ces fichiers.
+    </p>
+
+    <h3>3.2 Route /mes-annonces manquante</h3>
+    <p>
+      La page <code>mes_annonces.html</code> référençait des routes
+      (<code>/annonces/supprimer/&lt;id&gt;</code>, <code>/annonces/modifier/&lt;id&gt;</code>)
+      qui n'étaient pas définies dans <code>annonces.py</code>. Les routes suivantes ont été ajoutées :
+    </p>
+    <table>
+      <tr>
+        <th>Méthode</th>
+        <th>Route</th>
+        <th>Description</th>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/mes-annonces</td>
+        <td>Affiche les annonces de l'utilisateur connecté</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/annonces/modifier/&lt;id&gt;</td>
+        <td>Modifie une annonce (type, format, statut, matières, dispos, description)</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/annonces/supprimer/&lt;id&gt;</td>
+        <td>Supprime une annonce et ses liaisons (ANNONCE_MATIERE, ANNONCE_DISPONIBILITE, Réponses)</td>
+      </tr>
+    </table>
+    <p>
+      Chaque route vérifie que l'annonce appartient bien à l'utilisateur connecté avant toute
+      modification ou suppression (<strong>contrôle d'ownership</strong>).
+    </p>
+
     <!-- Déploiement -->
-    <h2>3. Instructions de Déploiement</h2>
+    <h2>4. Instructions de Déploiement</h2>
 
     <h3>Prérequis</h3>
     <ul>
@@ -269,7 +354,7 @@ PIL1_2526_37/
     <div class="step">
       <strong>3. Créer l'environnement virtuel et installer les dépendances</strong><br>
       <div class="code">python -m venv .venv<br>
-        .\.venv\Scripts\Activate.ps1 # Windows<br>
+        .\\.venv\\Scripts\\Activate.ps1 # Windows<br>
         pip install -r backend/requirements.txt</div>
     </div>
 
@@ -283,19 +368,19 @@ PIL1_2526_37/
 
     <div class="step">
       <strong>5. Lancer le serveur</strong><br>
-      <div class="code">python backend/messagerie.py</div>
-      <p class="mt-xs">Le serveur démarre sur <strong>http://localhost:5001</strong>.</p>
+      <div class="code">python backend/App_final.py</div>
+      <p class="mt-xs">Le serveur démarre sur <strong>http://localhost:8080</strong>.</p>
     </div>
 
     <div class="step">
       <strong>6. Ouvrir l'application</strong><br>
-      <p>Naviguer vers <code>http://localhost:5001</code> dans le navigateur.</p>
+      <p>Naviguer vers <code>http://localhost:8080</code> dans le navigateur.</p>
     </div>
 
     <!-- Utilisation -->
-    <h2>4. Manuel d'Utilisation</h2>
+    <h2>5. Manuel d'Utilisation</h2>
 
-    <h3>4.1 Messagerie</h3>
+    <h3>5.1 Messagerie</h3>
     <p>La page principale de messagerie se compose de deux zones :</p>
     <ul>
       <li><strong>Panneau gauche</strong> : Liste des conversations triées par date, avec le dernier message et le
@@ -318,7 +403,28 @@ PIL1_2526_37/
       <li><strong>Indicateur de non-lus</strong> : Un badge bleu sur une conversation indique les messages non lus.</li>
     </ul>
 
-    <h3>4.2 Notifications</h3>
+    <h3>5.2 Annonces</h3>
+    <ul>
+      <li><strong>Explorer les annonces</strong> : La page <em>Annonces</em> affiche les offres et demandes de mentorat
+        des autres étudiants, filtrées automatiquement selon les matières maîtrisées et les lacunes de l'utilisateur.</li>
+      <li><strong>Filtres disponibles</strong> : Par matière, format de session (présentiel / en ligne / les deux),
+        disponibilité et type (offre / demande).</li>
+      <li><strong>Répondre à une annonce</strong> : Cliquer sur le bouton de réponse, saisir un message d'accompagnement
+        et soumettre. Une réponse par annonce est autorisée.</li>
+    </ul>
+
+    <h3>5.3 Mes Annonces</h3>
+    <ul>
+      <li><strong>Publier une annonce</strong> : Accéder à <em>Mes annonces</em> via la barre latérale, choisir le
+        type (offre/demande), le format, les matières, les disponibilités et une description.</li>
+      <li><strong>Modifier une annonce</strong> : Cliquer sur ✏️ Modifier pour déplier le formulaire d'édition inline.
+        Les champs type, format, statut, matières, disponibilités et description sont modifiables.</li>
+      <li><strong>Fermer une annonce</strong> : Changer le statut sur "Fermée" dans le formulaire de modification.</li>
+      <li><strong>Supprimer une annonce</strong> : Cliquer sur 🗑 Supprimer avec confirmation. Toutes les liaisons
+        (matières, disponibilités, réponses) sont supprimées en cascade.</li>
+    </ul>
+
+    <h3>5.4 Notifications</h3>
     <ul>
       <li>Cliquer sur l'icône 🔔 dans la barre de navigation pour ouvrir le panneau des notifications.</li>
       <li>Les notifications sont classées par type (message, match, réponse) avec un code couleur.</li>
@@ -326,19 +432,17 @@ PIL1_2526_37/
         3 secondes.</li>
     </ul>
 
-    <h3>4.3 Comportement attendu</h3>
-    <ul>
-      <li>L'utilisateur courant est défini par défaut à l'ID 1 (Aimé Koffi) via la session Flask.</li>
-      <li>Les données de test incluent 2 discussions actives avec messages et notifications préremplis.</li>
-      <li>Le serveur WebSocket permet une communication bidirectionnelle sans rechargement de page.</li>
-    </ul>
-
-    <h3>4.4 Dépannage</h3>
+    <h3>5.5 Dépannage</h3>
     <table>
       <tr>
         <th>Problème</th>
         <th>Cause possible</th>
         <th>Solution</th>
+      </tr>
+      <tr>
+        <td>UndefinedError: 'user' is undefined</td>
+        <td>Context processor absent ou session expirée</td>
+        <td>Vérifier la présence de @app.context_processor inject_user() dans App_final.py</td>
       </tr>
       <tr>
         <td>Conversations vides</td>
@@ -347,17 +451,22 @@ PIL1_2526_37/
       </tr>
       <tr>
         <td>WebSocket ne se connecte pas</td>
-        <td>Port 5001 bloqué</td>
-        <td>Vérifier le pare-feu ou changer de port</td>
+        <td>Port 8080 bloqué</td>
+        <td>Vérifier le pare-feu ou changer de port dans App_final.py</td>
       </tr>
       <tr>
         <td>Erreur de connexion MySQL</td>
         <td>.env mal configuré</td>
         <td>Vérifier DB_HOST, DB_USER, DB_PASSWORD dans .env</td>
       </tr>
+      <tr>
+        <td>404 sur /mes-annonces</td>
+        <td>Blueprint non enregistré</td>
+        <td>Vérifier app.register_blueprint(annonces_bp) dans App_final.py</td>
+      </tr>
     </table>
 
-    <h3>4.5 Routes de l'API</h3>
+    <h3>5.6 Routes de l'API</h3>
     <table>
       <tr>
         <th>Méthode</th>
@@ -366,8 +475,53 @@ PIL1_2526_37/
       </tr>
       <tr>
         <td>GET</td>
-        <td>/</td>
-        <td>Page HTML de la messagerie</td>
+        <td>/dashboard</td>
+        <td>Tableau de bord (stats, matchs, annonces récentes)</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/matching</td>
+        <td>Résultats de l'algorithme de recommandation</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/explorer</td>
+        <td>Exploration des profils et annonces actives</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/annonces</td>
+        <td>Annonces filtrées selon profil utilisateur</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/annonces/new</td>
+        <td>Créer une nouvelle annonce</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/annonces/repondre</td>
+        <td>Répondre à une annonce</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/mes-annonces</td>
+        <td>Liste des annonces personnelles</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/annonces/modifier/&lt;id&gt;</td>
+        <td>Modifier une annonce existante</td>
+      </tr>
+      <tr>
+        <td>POST</td>
+        <td>/annonces/supprimer/&lt;id&gt;</td>
+        <td>Supprimer une annonce et ses liaisons</td>
+      </tr>
+      <tr>
+        <td>GET</td>
+        <td>/utilisateur/&lt;id&gt;</td>
+        <td>Voir le profil public d'un utilisateur</td>
       </tr>
       <tr>
         <td>GET</td>
@@ -407,23 +561,24 @@ PIL1_2526_37/
     </table>
 
     <!-- Savoir-être -->
-    <h2>5. Compétences Transversales</h2>
+    <h2>6. Compétences Transversales</h2>
 
-    <h3>5.1 Collaboration</h3>
+    <h3>6.1 Collaboration</h3>
     <p>Capacité à travailler en équipe, à partager les responsabilités, à coordonner les efforts pour atteindre des
       objectifs communs. Le projet a été mené en groupe de 6, avec une répartition claire des tâches (backend, frontend,
       base de données, rapport) et une communication régulière via WhatsApp et GitHub.</p>
 
-    <h3>5.2 Gestion du Temps</h3>
+    <h3>6.2 Gestion du Temps</h3>
     <p>Capacité à gérer efficacement le temps et à respecter les délais fixés pour les différentes tâches du projet. Les
-      fonctionnalités ont été livrées par itérations (messagerie, notifications, rapport) avec des deadlines
+      fonctionnalités ont été livrées par itérations (messagerie, notifications, annonces, rapport) avec des deadlines
       intermédiaires respectées.</p>
 
-    <h3>5.3 Résolution de Problèmes</h3>
+    <h3>6.3 Résolution de Problèmes</h3>
     <p>Capacité à identifier et à résoudre les problèmes rencontrés tout au long du projet, à rechercher des solutions
       alternatives et à prendre des décisions éclairées. Exemples : correction des accents dans les noms de tables SQL,
-      configuration de l'environnement pour la connexion MySQL, fallback polling 3s pour les notifications en cas
-      d'indisponibilité WebSocket.</p>
+      configuration de l'environnement pour la connexion MySQL, résolution de l'erreur
+      <code>UndefinedError: 'user' is undefined</code> via un context processor global Flask, ajout des routes CRUD
+      manquantes pour la gestion des annonces personnelles.</p>
 
     <p class="footer">
       Rapport généré dans le cadre du projet PIL1 2526_37 — Juin 2026

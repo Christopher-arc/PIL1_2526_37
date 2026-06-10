@@ -1,47 +1,177 @@
 {% extends "base.html" %}
 
+{% block titre %}Mon Profil{% endblock %}
+
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
   <h2 class="page-titre" style="margin:0">Mon Profil</h2>
-  <button class="btn-modifier btn btn-light border">✎ Modifier</button>
 </div>
 
+<!-- ── Aperçu ── -->
 <div class="carte-pp p-3 mb-3">
   <div class="d-flex align-items-center gap-3 flex-wrap">
-    <div class="grand-avatar bg-primary">{{ user.initiales }}</div>
+    {% if utilisateur['photo'] %}
+      <img src="/statics/photos/{{ utilisateur['photo'] }}" width="56" height="56"
+           style="border-radius:50%;object-fit:cover;flex-shrink:0">
+    {% else %}
+      <div class="grand-avatar" style="background:#1a2f54">{{ user.initiales }}</div>
+    {% endif %}
     <div>
-      <div class="fs-4 fw-bold text-dark">{{ user.nom }}</div>
-      <div class="mb-2">
-        <span class="bb me-1">{{ user.filiere }}</span>
-        <span class="bb me-1">{{ user.niveau }}</span>
-        <span class="bvio">{{ user.statut }}</span>
+      <div class="fs-5 fw-bold text-dark">{{ utilisateur['prenom'] }} {{ utilisateur['nom'] }}</div>
+      <div class="mb-1">
+        <span class="bb me-1">{{ utilisateur['filiere'] }}</span>
+        <span class="bb me-1">{{ utilisateur['niveau'] }}</span>
       </div>
-      <div class="small text-secondary">{{ user.email }}</div>
-      <div class="small text-secondary mt-1">{{ user.sessions }} sessions · Membre depuis <strong>{{ user.membre_depuis }}</strong></div>
+      <div class="small text-secondary">{{ utilisateur['email'] }}</div>
+      {% if utilisateur['telephone'] %}
+      <div class="small text-secondary">📞 {{ utilisateur['telephone'] }}</div>
+      {% endif %}
     </div>
   </div>
+  {% if utilisateur['Bio'] %}
+  <div class="mt-2 small text-secondary">{{ utilisateur['Bio'] }}</div>
+  {% endif %}
 </div>
 
+<!-- ── Formulaire infos principales ── -->
 <div class="carte-pp p-3 mb-3">
-  <div class="fw-bold text-dark mb-2">Biographie</div>
-  <p class="small text-secondary mb-0">{{ user.biographie if user.biographie else "Aucune biographie renseignée." }}</p>
+  <div class="fw-bold text-dark mb-3">✏️ Modifier mes informations</div>
+  <form method="POST" action="/profil" enctype="multipart/form-data">
+
+    <div class="row g-2 mb-2">
+      <div class="col-6">
+        <label class="form-label small fw-semibold">Nom</label>
+        <input type="text" name="nom" class="form-control form-control-sm"
+               value="{{ utilisateur['nom'] }}" required>
+      </div>
+      <div class="col-6">
+        <label class="form-label small fw-semibold">Prénom</label>
+        <input type="text" name="prenom" class="form-control form-control-sm"
+               value="{{ utilisateur['prenom'] }}" required>
+      </div>
+    </div>
+
+    <div class="row g-2 mb-2">
+      <div class="col-6">
+        <label class="form-label small fw-semibold">Téléphone</label>
+        <input type="text" name="telephone" class="form-control form-control-sm"
+               value="{{ utilisateur['telephone'] or '' }}" required>
+      </div>
+      <div class="col-6">
+        <label class="form-label small fw-semibold">Photo de profil</label>
+        <input type="file" name="photo" class="form-control form-control-sm" accept=".jpg,.jpeg,.png">
+      </div>
+    </div>
+
+    <div class="row g-2 mb-2">
+      <div class="col-6">
+        <label class="form-label small fw-semibold">Filière</label>
+        <select name="filiere" class="form-select form-select-sm">
+          {% for f in ['ISI','IM','GL','SE&IoT','SI'] %}
+          <option value="{{ f }}" {% if utilisateur['filiere'] == f %}selected{% endif %}>{{ f }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6">
+        <label class="form-label small fw-semibold">Niveau</label>
+        <select name="niveau" class="form-select form-select-sm">
+          {% for n in ['Licence 1','Licence 2','Licence 3','Master 1','Master 2'] %}
+          <option value="{{ n }}" {% if utilisateur['niveau'] == n %}selected{% endif %}>{{ n }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">Biographie</label>
+      <textarea name="bio" class="form-control form-control-sm" rows="3"
+                placeholder="Parlez de vous, vos objectifs…">{{ utilisateur['Bio'] or '' }}</textarea>
+    </div>
+
+    <!-- Points forts -->
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">💪 Points forts (matières maîtrisées)</label>
+      <div class="d-flex flex-wrap gap-1 p-2 border rounded" style="max-height:130px;overflow-y:auto">
+        {% for m in matieres %}
+        <label class="d-flex align-items-center gap-1 small border rounded px-2 py-1" style="cursor:pointer">
+          <input type="checkbox" name="points_forts" value="{{ m['id_matiere'] }}"
+            {% if m['id_matiere'] in points_forts %}checked{% endif %}>
+          {{ m['nom_matiere'] }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Points faibles -->
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">📚 Points faibles (ce que tu veux apprendre)</label>
+      <div class="d-flex flex-wrap gap-1 p-2 border rounded" style="max-height:130px;overflow-y:auto">
+        {% for m in matieres %}
+        <label class="d-flex align-items-center gap-1 small border rounded px-2 py-1" style="cursor:pointer">
+          <input type="checkbox" name="points_faibles" value="{{ m['id_matiere'] }}"
+            {% if m['id_matiere'] in points_faibles %}checked{% endif %}>
+          {{ m['nom_matiere'] }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Disponibilités -->
+    <div class="mb-3">
+      <label class="form-label small fw-semibold">📅 Disponibilités</label>
+      <div class="d-flex flex-wrap gap-1 p-2 border rounded" style="max-height:130px;overflow-y:auto">
+        {% for d in dispos %}
+        <label class="d-flex align-items-center gap-1 small border rounded px-2 py-1" style="cursor:pointer">
+          <input type="checkbox" name="disponibilites" value="{{ d['id_dispo'] }}"
+            {% if d['id_dispo'] in mes_dispos %}checked{% endif %}>
+          {{ d['jour'] }} {{ d['heure_debut'] }}-{{ d['heure_fin'] }}
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
+    <button type="submit" class="btn-navy">💾 Enregistrer les modifications</button>
+  </form>
 </div>
 
+<!-- ── Modifier email ── -->
 <div class="carte-pp p-3 mb-3">
-  <div class="fw-bold text-dark mb-2">Compétences <span class="text-secondary fw-normal small">({{ user.competences|length }} sélectionnées)</span></div>
-  <div>{% for c in user.competences %}<span class="pill">{{ c }}</span>{% endfor %}</div>
+  <div class="fw-bold text-dark mb-2">📧 Modifier l'email</div>
+  <div class="small text-secondary mb-2">Email actuel : <strong>{{ utilisateur['email'] }}</strong></div>
+  <form method="POST" action="/profil/modifier-email" class="row g-2">
+    <div class="col-5">
+      <input type="email" name="email" class="form-control form-control-sm"
+             placeholder="Nouvel email" required>
+    </div>
+    <div class="col-5">
+      <input type="password" name="mot_de_passe" class="form-control form-control-sm"
+             placeholder="Mot de passe actuel" required>
+    </div>
+    <div class="col-2">
+      <button type="submit" class="btn-navy w-100">OK</button>
+    </div>
+  </form>
 </div>
 
+<!-- ── Modifier mot de passe ── -->
 <div class="carte-pp p-3 mb-3">
-  <div class="fw-bold text-dark mb-3">Disponibilités hebdomadaires</div>
-  <div class="grille-dispo">
-    <div class="dh">Jour</div><div class="dh">08h-10h</div><div class="dh">10h-12h</div><div class="dh">14h-16h</div><div class="dh">16h-18h</div><div class="dh">18h-20h</div>
-    {% for jour, creneaux in disponibilites.items() %}
-    <div class="dj">{{ jour[:3] }}</div>
-    {% for creneau in creneaux %}
-    <div class="dc {% if creneau %}on{% endif %}"></div>
-    {% endfor %}
-    {% endfor %}
-  </div>
+  <div class="fw-bold text-dark mb-2">🔒 Modifier le mot de passe</div>
+  <form method="POST" action="/profil/modifier-mdp" class="row g-2">
+    <div class="col-4">
+      <input type="password" name="ancien_mdp" class="form-control form-control-sm"
+             placeholder="Mot de passe actuel" required>
+    </div>
+    <div class="col-4">
+      <input type="password" name="nouveau_mdp" class="form-control form-control-sm"
+             placeholder="Nouveau mot de passe" required>
+    </div>
+    <div class="col-4">
+      <input type="password" name="confirm_mdp" class="form-control form-control-sm"
+             placeholder="Confirmer le nouveau" required>
+    </div>
+    <div class="col-12">
+      <button type="submit" class="btn-navy">Changer le mot de passe</button>
+    </div>
+  </form>
 </div>
 {% endblock %}

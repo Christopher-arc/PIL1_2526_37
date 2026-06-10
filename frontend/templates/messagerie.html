@@ -1,23 +1,143 @@
 {% extends "base.html" %}
 
+{% block titre %}Messagerie{% endblock %}
+
 {% block content %}
 <div class="msg-layout">
+
+  <!-- ── Colonne gauche : liste des conversations ── -->
   <div class="msg-gauche">
     <div class="msg-titre">Messages</div>
     <div class="p-2 border-bottom">
-      <input type="text" class="form-control form-control-sm" placeholder="Chercher un utilisateur...">
+      <input type="text" class="form-control form-control-sm" placeholder="Chercher..." style="border-radius:7px;font-size:.8rem">
     </div>
-    <div class="msg-vide">
-      <div class="fs-1 mb-2 opacity-25">✉️</div>
-      <div>Aucune conversation.</div>
-      <div class="small">Trouvez un match et contactez-le !</div>
-    </div>
-    <button class="btn btn-light border w-90 mx-2 my-2 py-1 small">+ Nouvelle conversation</button>
+
+    {% if discussions %}
+      {% for d in discussions %}
+      <a href="/messagerie?discussion={{ d.id_discussion }}"
+         class="msg-conv-item d-block text-decoration-none {% if discussion_active == d.id_discussion %}actif{% endif %}">
+        <div class="d-flex align-items-center gap-2">
+          <div class="avatar" style="background:#1a2f54;width:34px;height:34px;font-size:.72rem">
+            {{ d.participants[:2].upper() if d.participants else '?' }}
+          </div>
+          <div style="overflow:hidden;flex:1">
+            <div class="fw-semibold text-dark small text-truncate">{{ d.participants }}</div>
+            <div class="text-secondary text-truncate" style="font-size:.72rem">
+              {{ d.dernier_message[:40] + '…' if d.dernier_message and d.dernier_message|length > 40 else (d.dernier_message or 'Aucun message') }}
+            </div>
+          </div>
+        </div>
+      </a>
+      {% endfor %}
+    {% else %}
+      <div class="msg-vide">
+        <div class="fs-1 mb-2 opacity-25">✉️</div>
+        <div class="fw-semibold">Aucune conversation</div>
+        <div class="small mt-1">Contactez quelqu'un depuis Explorer ou les Annonces</div>
+      </div>
+    {% endif %}
   </div>
+
+  <!-- ── Colonne droite : messages ── -->
   <div class="msg-droite">
-    <div class="fs-1 mb-2 opacity-25">✉️</div>
-    <p class="fw-semibold text-dark mb-0">Sélectionnez une conversation</p>
-    <small class="text-secondary">ou trouvez un match pour commencer</small>
+    {% if discussion_active and messages is defined %}
+      <!-- Header discussion -->
+      <div class="msg-titre border-bottom d-flex align-items-center gap-2" style="padding:12px 16px">
+        {% for d in discussions %}
+          {% if d.id_discussion == discussion_active %}
+          <div class="avatar" style="background:#1a2f54;width:34px;height:34px;font-size:.72rem">
+            {{ d.participants[:2].upper() }}
+          </div>
+          <span class="fw-semibold text-dark">{{ d.participants }}</span>
+          {% endif %}
+        {% endfor %}
+      </div>
+
+      <!-- Zone messages -->
+      <div class="msg-messages" id="zoneMessages">
+        {% for msg in messages %}
+          <div>
+            {% if msg.id_utilisateur != user.id %}
+            <div class="small text-secondary mb-1" style="font-size:.7rem">
+              {{ msg.prenom }} {{ msg.nom }}
+            </div>
+            {% endif %}
+            <div class="msg-bubble {% if msg.id_utilisateur == user.id %}moi{% else %}autre{% endif %}">
+              {{ msg.contenu }}
+            </div>
+            <div class="small mt-1 {% if msg.id_utilisateur == user.id %}text-end{% endif %}" style="font-size:.68rem;color:#aab">
+              {{ msg.date_envoi.strftime('%H:%M') if msg.date_envoi else '' }}
+            </div>
+          </div>
+        {% endfor %}
+        {% if not messages %}
+          <div class="text-center text-secondary small mt-auto mb-auto">
+            <div class="fs-3 mb-2">👋</div>
+            Commencez la conversation !
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Saisie message -->
+      <div class="msg-footer">
+        <form method="POST" action="/messagerie/envoyer" class="d-flex gap-2 w-100" id="formMsg">
+          <input type="hidden" name="discussion_id" value="{{ discussion_active }}">
+          <input type="text" name="contenu" id="inputMsg" class="msg-input"
+                 placeholder="Écrire un message…" autocomplete="off" required>
+          <button type="submit" class="btn-navy" style="padding:8px 18px">Envoyer</button>
+        </form>
+      </div>
+
+    {% else %}
+      <div class="msg-droite-vide">
+        <div class="fs-1 mb-2 opacity-25">✉️</div>
+        <p class="fw-semibold text-dark mb-0">Sélectionnez une conversation</p>
+        <small class="text-secondary">ou trouvez un match pour commencer</small>
+      </div>
+    {% endif %}
   </div>
+
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Scroll automatique vers le bas
+  var zone = document.getElementById('zoneMessages');
+  if (zone) zone.scrollTop = zone.scrollHeight;
+
+  // SocketIO (temps réel si disponible)
+  {% if discussion_active %}
+  try {
+    var socket = io();
+    socket.emit('rejoindre_discussion', { discussion_id: {{ discussion_active }} });
+
+    socket.on('nouveau_message', function(data) {
+      if (!zone) return;
+      var isMoi = (data.id_utilisateur == {{ user.id }});
+      var html = '<div>';
+      if (!isMoi) html += '<div class="small text-secondary mb-1" style="font-size:.7rem">' + data.prenom + ' ' + data.nom + '</div>';
+      html += '<div class="msg-bubble ' + (isMoi ? 'moi' : 'autre') + '">' + data.contenu + '</div>';
+      html += '</div>';
+      zone.insertAdjacentHTML('beforeend', html);
+      zone.scrollTop = zone.scrollHeight;
+    });
+
+    // Envoi via SocketIO
+    document.getElementById('formMsg').addEventListener('submit', function(e) {
+      var input = document.getElementById('inputMsg');
+      var msg = input.value.trim();
+      if (!msg) return;
+      e.preventDefault();
+      socket.emit('envoyer_message', {
+        discussion_id: {{ discussion_active }},
+        contenu: msg
+      });
+      input.value = '';
+    });
+  } catch(e) {
+    // SocketIO non disponible : le formulaire POST fonctionne normalement
+  }
+  {% endif %}
+</script>
 {% endblock %}

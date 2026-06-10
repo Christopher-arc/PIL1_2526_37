@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IFRI MentorLink - Connexion</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Sora', sans-serif;
+      height: 100vh;
+      display: flex;
+    }
+
+    .panneau-gauche {
+      width: 42%;
+      background-color: #1a2f54;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: white;
+    }
+
+    .logo-box {
+      width: 38px;
+      height: 38px;
+      background-color: #2ecc71;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+    }
+
+    .titre-principal {
+      font-size: 2.4rem;
+      font-weight: 800;
+      line-height: 1.2;
+    }
+
+    .sous-titre {
+      color: rgba(255,255,255,0.6);
+      font-size: 0.9rem;
+      margin-top: 12px;
+    }
+
+    .ligne-sep {
+      border-color: rgba(255,255,255,0.15);
+      margin: 20px 0;
+    }
+
+    .stat-chiffre {
+      font-size: 1.8rem;
+      font-weight: 800;
+      color: #2ecc71;
+    }
+
+    .stat-label {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.5);
+      text-transform: uppercase;
+    }
+
+    .panneau-droit {
+      flex: 1;
+      background-color: #f4f6fb;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 30px;
+    }
+
+    .form-box {
+      width: 100%;
+      max-width: 460px;
+    }
+
+    .toggle-tabs {
+      background-color: #e2e8f0;
+      border-radius: 10px;
+      padding: 4px;
+      display: flex;
+      margin-bottom: 28px;
+    }
+
+    .toggle-tabs button {
+      flex: 1;
+      border: none;
+      background: transparent;
+      border-radius: 8px;
+      padding: 10px;
+      font-family: 'Sora', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: #8a94a8;
+      cursor: pointer;
+    }
+
+    .toggle-tabs button.actif {
+      background: white;
+      color: #1a2f54;
+      font-weight: 700;
+      box-shadow: 0 1px 6px rgba(0,0,0,0.1);
+    }
+
+    .form-label {
+      font-size: 0.83rem;
+      font-weight: 600;
+      color: #2d3748;
+    }
+
+    .form-control {
+      border-radius: 8px;
+      border: 1.5px solid #dde3ef;
+      padding: 11px 14px;
+      font-size: 0.88rem;
+    }
+
+    .form-control:focus {
+      border-color: #1a2f54;
+      box-shadow: 0 0 0 3px rgba(26,47,84,0.1);
+    }
+
+    .form-select {
+      border-radius: 8px;
+      border: 1.5px solid #dde3ef;
+      padding: 11px 14px;
+      font-size: 0.88rem;
+    }
+
+    .btn-connect {
+      width: 100%;
+      background-color: #1a2f54;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 13px;
+      font-family: 'Sora', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 6px;
+    }
+
+    .btn-connect:hover { background-color: #152545; }
+
+    .btn-retour {
+      width: 100%;
+      background-color: white;
+      color: #1a2f54;
+      border: 1.5px solid #dde3ef;
+      border-radius: 8px;
+      padding: 12px;
+      font-family: 'Sora', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .hint {
+      text-align: center;
+      font-size: 0.78rem;
+      color: #8a94a8;
+      margin-top: 12px;
+    }
+
+    .stepper {
+      display: flex;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .etape {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: #e0e6f0;
+      color: #8a94a8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .etape.active { background: #1a2f54; color: white; }
+    .etape.done   { background: #2ecc71; color: white; }
+
+    .ligne-etape { flex: 1; height: 2px; background: #e0e6f0; }
+    .ligne-etape.done { background: #2ecc71; }
+
+    .label-etape {
+      font-size: 0.75rem;
+      color: #8a94a8;
+      margin-left: 8px;
+    }
+
+    .btn-role {
+      flex: 1;
+      padding: 9px;
+      border: 1.5px solid #dde3ef;
+      border-radius: 8px;
+      background: white;
+      font-size: 0.82rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .btn-role.choisi {
+      background: #1a2f54;
+      color: white;
+      border-color: #1a2f54;
+    }
+
+    .zone-competences {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      border: 1.5px solid #dde3ef;
+      border-radius: 8px;
+      padding: 10px;
+      max-height: 150px;
+      overflow-y: auto;
+      background: white;
+    }
+
+    .tag-comp {
+      padding: 4px 12px;
+      border: 1.5px solid #dde3ef;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      cursor: pointer;
+      color: #3a4460;
+    }
+
+    .tag-comp.choisi {
+      background: #1a2f54;
+      color: white;
+      border-color: #1a2f54;
+    }
+
+    .grille-dispo {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 3px;
+      font-size: 0.78rem;
+    }
+
+    .grille-dispo th {
+      color: #8a94a8;
+      font-weight: 500;
+      text-align: center;
+      padding: 3px;
+    }
+
+    .grille-dispo .jour {
+      color: #3a4460;
+      font-weight: 600;
+      padding: 3px 6px;
+    }
+
+    .case-dispo {
+      width: 34px;
+      height: 26px;
+      background: #e8ecf4;
+      border-radius: 5px;
+      cursor: pointer;
+      border: none;
+      display: block;
+      margin: auto;
+    }
+
+    .case-dispo.active { background: #1a2f54; }
+
+    /* Flash messages */
+    .alert { border-radius: 8px; font-size: 0.85rem; padding: 10px 14px; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+
+<div class="panneau-gauche">
+  <div class="d-flex align-items-center gap-2">
+    <div class="logo-box">M</div>
+    <span style="font-weight:700;font-size:0.9rem">IFRI_MENTORLINK</span>
+  </div>
+  <div>
+    <h1 class="titre-principal">Connectez-vous<br>avec les meilleurs<br>de votre promo.</h1>
+    <p class="sous-titre">Trouvez un mentor ou devenez le guide dont quelqu'un a besoin. L'excellence académique se construit ensemble.</p>
+    <hr class="ligne-sep">
+    <div class="d-flex gap-4">
+      <div><div class="stat-chiffre">47</div><div class="stat-label">Mentors actifs</div></div>
+      <div><div class="stat-chiffre">312</div><div class="stat-label">Sessions réalisées</div></div>
+      <div><div class="stat-chiffre">4.8★</div><div class="stat-label">Score moyen</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="panneau-droit">
+  <div class="form-box">
+
+    <!-- Flash messages Flask -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ 'danger' if category == 'danger' else 'success' if category == 'success' else 'info' }}">
+            {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="toggle-tabs">
+      <button class="actif" id="btn-connexion" onclick="afficherOnglet('connexion')">Connexion</button>
+      <button id="btn-inscription" onclick="afficherOnglet('inscription')">Inscription</button>
+    </div>
+
+    <!-- ========== FORMULAIRE CONNEXION ========== -->
+    <div id="section-connexion">
+      <form method="POST" action="/connexion">
+        <div class="mb-3">
+          <label class="form-label">Email ou téléphone</label>
+          <input type="text" name="identifiant" class="form-control" placeholder="prenom@ifri.com" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label">Mot de passe</label>
+          <input type="password" name="mot_de_passe" class="form-control" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn-connect">Se connecter</button>
+      </form>
+    </div>
+
+    <!-- ========== FORMULAIRE INSCRIPTION ========== -->
+    <div id="section-inscription" style="display:none">
+      <form method="POST" action="/inscription" id="form-inscription">
+
+        <!-- Champs cachés pour les compétences et dispos -->
+        <div id="hidden-points-forts"></div>
+        <div id="hidden-points-faibles"></div>
+        <div id="hidden-dispos"></div>
+
+        <div class="stepper">
+          <div class="etape active" id="e1">1</div>
+          <div class="ligne-etape" id="l1"></div>
+          <div class="etape" id="e2">2</div>
+          <div class="ligne-etape" id="l2"></div>
+          <div class="etape" id="e3">3</div>
+          <span class="label-etape" id="label-etape">Compte</span>
+        </div>
+
+        <!-- ÉTAPE 1 : Infos compte -->
+        <div id="etape1">
+          <div class="row mb-3">
+            <div class="col-6">
+              <label class="form-label">Nom</label>
+              <input type="text" name="nom" class="form-control" placeholder="Koffi" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Prénom</label>
+              <input type="text" name="prenom" class="form-control" placeholder="Jean" required>
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Téléphone</label>
+            <input type="text" name="telephone" class="form-control" placeholder="97000000" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Email IFRI</label>
+            <input type="email" name="email" class="form-control" placeholder="prenom@ifri.com" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Mot de passe</label>
+            <input type="password" name="mot_de_passe" class="form-control" placeholder="Min. 6 caractères" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Confirmer le mot de passe</label>
+            <input type="password" name="mot_de_passe_confirm" class="form-control" placeholder="••••••••" required>
+          </div>
+          <button type="button" class="btn-connect" onclick="allerEtape(2)">Suivant →</button>
+        </div>
+
+        <!-- ÉTAPE 2 : Profil -->
+        <div id="etape2" style="display:none">
+          <div class="row mb-3">
+            <div class="col-6">
+              <label class="form-label">Filière</label>
+              <select name="filiere" class="form-select">
+                <option value="ISI">ISI</option>
+                <option value="IM">IM</option>
+                <option value="GL">GL</option>
+                <option value="SE&IoT">SE&IoT</option>
+                <option value="SI">SI</option>
+              </select>
+            </div>
+            <div class="col-6">
+              <label class="form-label">Niveau</label>
+              <select name="niveau" class="form-select">
+                <option value="Licence 1">Licence 1</option>
+                <option value="Licence 2">Licence 2</option>
+                <option value="Licence 3">Licence 3</option>
+                <option value="Master 1">Master 1</option>
+                <option value="Master 2">Master 2</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Bio <span style="color:#8a94a8;font-weight:400">(facultatif)</span></label>
+            <textarea name="bio" class="form-control" rows="2" placeholder="Décrivez vos objectifs..."></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Points forts (ce que tu maîtrises)</label>
+            <div class="zone-competences" id="zone-forts"></div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Points faibles (ce que tu veux apprendre)</label>
+            <div class="zone-competences" id="zone-faibles"></div>
+          </div>
+
+          <div class="d-flex gap-2 mt-3">
+            <button type="button" class="btn-retour" onclick="allerEtape(1)">Retour</button>
+            <button type="button" class="btn-connect" style="margin-top:0" onclick="allerEtape(3)">Suivant →</button>
+          </div>
+        </div>
+
+        <!-- ÉTAPE 3 : Disponibilités -->
+        <div id="etape3" style="display:none">
+          <label class="form-label mb-2 d-block">Disponibilités hebdomadaires</label>
+          <table class="grille-dispo">
+            <thead>
+              <tr>
+                <th>Jour</th>
+                <th>08h-10h</th>
+                <th>10h-12h</th>
+                <th>14h-16h</th>
+                <th>16h-18h</th>
+                <th>18h-20h</th>
+              </tr>
+            </thead>
+            <tbody id="corps-dispo"></tbody>
+          </table>
+
+          <div class="d-flex gap-2 mt-3">
+            <button type="button" class="btn-retour" onclick="allerEtape(2)">Retour</button>
+            <button type="submit" class="btn-connect" style="margin-top:0" onclick="preparerSoumission()">
+              Créer mon profil
+            </button>
+          </div>
+        </div>
+
+      </form>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+
+  // ── Onglets Connexion / Inscription ──────────────────────────────────────
+  function afficherOnglet(onglet) {
+    document.getElementById('section-connexion').style.display  = onglet === 'connexion'   ? 'block' : 'none';
+    document.getElementById('section-inscription').style.display = onglet === 'inscription' ? 'block' : 'none';
+    document.getElementById('btn-connexion').className  = onglet === 'connexion'   ? 'actif' : '';
+    document.getElementById('btn-inscription').className = onglet === 'inscription' ? 'actif' : '';
+  }
+
+  // ── Stepper ──────────────────────────────────────────────────────────────
+  var etapeCourante = 1;
+  var nomsEtapes = ['Compte', 'Profil', 'Disponibilités'];
+
+  function allerEtape(n) {
+    document.getElementById('etape' + etapeCourante).style.display = 'none';
+    etapeCourante = n;
+    document.getElementById('etape' + etapeCourante).style.display = 'block';
+    mettreAJourStepper();
+  }
+
+  function mettreAJourStepper() {
+    for (var i = 1; i <= 3; i++) {
+      var c = document.getElementById('e' + i);
+      c.className = 'etape';
+      if (i < etapeCourante) c.classList.add('done');
+      else if (i === etapeCourante) c.classList.add('active');
+    }
+    for (var j = 1; j <= 2; j++) {
+      document.getElementById('l' + j).className = 'ligne-etape' + (j < etapeCourante ? ' done' : '');
+    }
+    document.getElementById('label-etape').textContent = nomsEtapes[etapeCourante - 1];
+  }
+
+  // ── Compétences depuis Flask (matieres) ──────────────────────────────────
+  var matieres = {{ matieres | tojson | safe if matieres else '[]' }};
+
+  // Points forts
+  var zoneForts   = document.getElementById('zone-forts');
+  var zoneFaibles = document.getElementById('zone-faibles');
+  var selectedForts   = new Set();
+  var selectedFaibles = new Set();
+
+  matieres.forEach(function(m) {
+    // Tag points forts
+    var tagF = document.createElement('div');
+    tagF.className = 'tag-comp';
+    tagF.textContent = m.nom_matiere || m.nom || m;
+    tagF.dataset.id = m.id_matiere || m.id || m;
+    tagF.onclick = function() {
+      tagF.classList.toggle('choisi');
+      var id = tagF.dataset.id;
+      if (tagF.classList.contains('choisi')) selectedForts.add(id);
+      else selectedForts.delete(id);
+    };
+    zoneForts.appendChild(tagF);
+
+    // Tag points faibles
+    var tagW = document.createElement('div');
+    tagW.className = 'tag-comp';
+    tagW.textContent = m.nom_matiere || m.nom || m;
+    tagW.dataset.id = m.id_matiere || m.id || m;
+    tagW.onclick = function() {
+      tagW.classList.toggle('choisi');
+      var id = tagW.dataset.id;
+      if (tagW.classList.contains('choisi')) selectedFaibles.add(id);
+      else selectedFaibles.delete(id);
+    };
+    zoneFaibles.appendChild(tagW);
+  });
+
+  // ── Grille disponibilités avec vrais IDs depuis la BDD ──────────────────
+  // dispos_bdd est injecté par Flask : [{id_dispo, jour, heure_debut, heure_fin}, ...]
+  var dispos_bdd = {{ dispos | tojson | safe if dispos else '[]' }};
+
+  // Construire une map "Lun_08h-10h" → id_dispo
+  var joursMap = {
+    'Lundi': 'Lun', 'Mardi': 'Mar', 'Mercredi': 'Mer',
+    'Jeudi': 'Jeu', 'Vendredi': 'Ven', 'Samedi': 'Sam'
+  };
+  var dispoIdMap = {};  // "Lun_08h-10h" → id
+  dispos_bdd.forEach(function(d) {
+    var jourCourt = joursMap[d.jour] || d.jour.substring(0,3);
+    // Normaliser heure: "08:00:00" → "08h", "10:00:00" → "10h"
+    function heure(t) {
+      if (!t) return '';
+      var parts = t.split(':');
+      return parts[0] + 'h';
+    }
+    var key = jourCourt + '_' + heure(d.heure_debut) + '-' + heure(d.heure_fin);
+    dispoIdMap[key] = d.id_dispo;
+  });
+
+  var jours    = ['Lun','Mar','Mer','Jeu','Ven','Sam'];
+  var creneaux = ['08h-10h','10h-12h','14h-16h','16h-18h','18h-20h'];
+  var corps    = document.getElementById('corps-dispo');
+  var dispos   = {};  // { "Lun_08h-10h": true/false, ... }
+
+  jours.forEach(function(jour) {
+    var ligne = document.createElement('tr');
+    ligne.innerHTML = '<td class="jour">' + jour + '</td>';
+    creneaux.forEach(function(creneau) {
+      var key = jour + '_' + creneau;
+      dispos[key] = false;
+      var td  = document.createElement('td');
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'case-dispo';
+      btn.onclick = function() {
+        btn.classList.toggle('active');
+        dispos[key] = btn.classList.contains('active');
+      };
+      td.appendChild(btn);
+      ligne.appendChild(td);
+    });
+    corps.appendChild(ligne);
+  });
+
+  // ── Préparer la soumission : injecter les champs cachés ──────────────────
+  function preparerSoumission() {
+    // Points forts
+    var contForts = document.getElementById('hidden-points-forts');
+    contForts.innerHTML = '';
+    selectedForts.forEach(function(id) {
+      var inp = document.createElement('input');
+      inp.type = 'hidden'; inp.name = 'points_forts'; inp.value = id;
+      contForts.appendChild(inp);
+    });
+
+    // Points faibles
+    var contFaibles = document.getElementById('hidden-points-faibles');
+    contFaibles.innerHTML = '';
+    selectedFaibles.forEach(function(id) {
+      var inp = document.createElement('input');
+      inp.type = 'hidden'; inp.name = 'points_faibles'; inp.value = id;
+      contFaibles.appendChild(inp);
+    });
+
+    // Disponibilités actives → on envoie l'id_dispo réel
+    var contDispos = document.getElementById('hidden-dispos');
+    contDispos.innerHTML = '';
+    Object.keys(dispos).forEach(function(key) {
+      if (dispos[key]) {
+        var id = dispoIdMap[key];
+        if (id !== undefined) {
+          var inp = document.createElement('input');
+          inp.type = 'hidden'; inp.name = 'disponibilites'; inp.value = id;
+          contDispos.appendChild(inp);
+        }
+      }
+    });
+  }
+
+  // Ouvrir sur l'onglet inscription si Flask a renvoyé une erreur d'inscription
+  {% if request.path == '/inscription' %}
+    afficherOnglet('inscription');
+  {% endif %}
+
+</script>
+</body>
+</html>

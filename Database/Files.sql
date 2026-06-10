@@ -1,3 +1,4 @@
+DROP DATABASE if exists ifri_mentorlink;
 CREATE DATABASE IF NOT EXISTS IFRI_MentorLink;
 USE IFRI_MentorLink;
 
